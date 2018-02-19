@@ -134,7 +134,6 @@ void askForDietNum(void) {
             i=0;
         }  
     }
-    
 }
 
 void showPrompt(void) {
@@ -214,7 +213,6 @@ int isProperInput(void) {
     }
     else if (currentInputMode == MODE_INPUT_DESTINATION) 
         return (atoi(input) <= 16 && atoi(input) >= 1);
-    
     return 0;
 }
 

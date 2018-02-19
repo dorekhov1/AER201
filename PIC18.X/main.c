@@ -45,7 +45,6 @@ void main(void) {
     INT1IE = 1; // Enable RB1 (keypad data available) interrupt
     ei(); // Enable all interrupts
     
-    /* Initialize LCD. */
     initLCD();
     I2C_Master_Init(100000);
     
@@ -123,7 +122,6 @@ void interrupt interruptHandler(void){
             if (isOperationReady()) createOperation();
             if (needToDeleteOperation()) deleteOperation(getDisplayedOperationNum());
         }
-        
         INT1IF = 0;
     }
     
