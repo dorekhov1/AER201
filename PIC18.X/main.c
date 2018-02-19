@@ -47,14 +47,7 @@ void main(void) {
     
     /* Initialize LCD. */
     initLCD();
-    initGLCD();
-    
-    I2C_Master_Start(); // Start condition
-    
-    //I2C_Master_Write(0b00010000); // 7-bit Arduino slave address + write
-    //I2C_Master_Stop();
-    
-    //SEND = 1;
+    I2C_Master_Init(100000);
     
     while (1) {
         if (currentMachineMode == MODE_STANDBY) enterStandby();
@@ -76,32 +69,22 @@ void main(void) {
 
 void enterStandby(void) {
     setOperationNum(0);
-    
+    setArduinoToStandby();
     __lcd_clear();
-    __glcd_clear();
     
     __lcd_display_control(1, 0, 0);
     printf("Press any button");
     __lcd_newline();
     printf("to begin. ");
     
-    print_px_string(5, 27, "Welcome!");
-    print_px_string(5, 49, "Please load the food");
-    print_px_string(5, 60, "into the reservoirs.");
-    
-    print_px_string(5, 77, "Then, press any");
-    print_px_string(5, 88, "button to begin.");    
-    
     int i = 10;
     while (currentInputMode == MODE_STANDBY) {
         __delay_ms(100);
-        if (i==10) {
+        if (i++==10) {
             printTimeToGLCD();
             i=0;
         }
-        i++;
     }
-    
     __lcd_display_control(1, 1, 0);
 }
 
@@ -114,19 +97,18 @@ void createOperation(void) {
     setOperationReady(0);
 }
 
+void deleteOperation(int num) {
+    for (int i = num; i<getOperationNum(); i++) {
+        operations[i].destination = operations[i+1].destination;
+        operations[i].dietNum = operations[i+1].dietNum ;
+        operations[i].dietType = operations[i+1].dietType;
+    }
+    setOperationNum(getOperationNum() - 1);
+    setDeleteOperation(0);
+}
+
 void interrupt interruptHandler(void){
-    /* This function is mapped to the interrupt vector, and so is called when
-     * any interrupt occurs to handle it. Note that if any interrupt is enabled,
-     * and it does not have a handler to clear it, then unexpected behavior will
-     * occur, perhaps even causing the PIC to reset.
-     *
-     * Arguments: none
-     * 
-     * Returns: none
-     */
-    
     if (INT1IF) {
-        
         unsigned char keypress = (PORTB & 0xF0) >> 4;
         
         if (currentMachineMode == MODE_STANDBY) {
@@ -139,17 +121,8 @@ void interrupt interruptHandler(void){
             processInputInterrupt(keypress);
             if (getInputMode() == MODE_NO_INPUT) currentMachineMode = MODE_STANDBY;
             if (isOperationReady()) createOperation();
+            if (needToDeleteOperation()) deleteOperation(getDisplayedOperationNum());
         }
-        
-        /*
-        if(SEND){
-            data = keys[keypress];
-            
-            I2C_Master_Start(); // Start condition
-            I2C_Master_Write(0b00010000); // 7-bit Arduino slave address + write
-            I2C_Master_Write(data); // Write key press data
-            I2C_Master_Stop();
-        }*/
         
         INT1IF = 0;
     }

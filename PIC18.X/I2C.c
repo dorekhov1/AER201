@@ -63,6 +63,7 @@ static void I2C_Master_Wait(){
      *   2. A Start/Repeated Start/Stop/Acknowledge sequence has not yet been
      *      cleared by hardware
      */
+    
     while ((SSPSTAT & 0x04) || (SSPCON2 & 0x1F));
 }
 
@@ -126,16 +127,17 @@ unsigned char I2C_Master_Read(unsigned char ackBit){
    *
    * Returns: byte received
    */
-
+    
     unsigned char receivedByte;
 
     I2C_Master_Wait(); // Ensure I2C module is idle
     SSPCON2bits.RCEN = 1; // Enable receive mode for I2C module
-
+    
     I2C_Master_Wait(); // Wait until receive buffer is full
     receivedByte = SSPBUF; // Read received by from the serial port buffer
 
     I2C_Master_Wait(); // Ensure I2C module is idle
+    
     SSPCON2bits.ACKDT = ackBit; // Acknowledge data bit
     SSPCON2bits.ACKEN = 1; // Initiate acknowledge bit transmission sequence
     

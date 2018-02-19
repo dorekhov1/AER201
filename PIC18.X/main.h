@@ -15,8 +15,9 @@
 #include "enums.h"
 #include "inputHandler.h"
 #include "I2C.h"
-#include "GLCD_PIC.h"
 #include "rtc.h"
+#include "eep.h"
+#include "arduino.h"
 
 typedef struct {
     
@@ -29,4 +30,3 @@ typedef struct {
 void enterStandby(void);
 
 #endif	/* MAIN_H */
-
