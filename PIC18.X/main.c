@@ -51,7 +51,7 @@ void main(void) {
     while (1) {
         if (currentMachineMode == MODE_STANDBY) enterStandby();
             
-        while (currentMachineMode == MODE_INPUT) {
+        if (currentMachineMode == MODE_INPUT) {
             if (getInputMode() == MODE_EMPTY_INPUT) askForOperationInput();
             else if (getInputMode() == MODE_INPUT_DESTINATION) askForDestination();
             else if (getInputMode() == MODE_INPUT_DIET) askForDietType();
@@ -61,6 +61,36 @@ void main(void) {
                 int opNum = getDisplayedOperationNum();
                 Operation operation = operations[opNum];
                 showInput(opNum, DIETS[operation.dietType - 1], operation.dietNum, operation.destination);
+            }
+        }
+        
+        if (currentMachineMode == MODE_RUNNING) {
+            beginTopCounters();
+                        
+            int tapeValues[16];
+            readTapes(tapeValues);
+            
+            int tapedDrawers[4];
+            int tapedDrawersNum = processTapes(tapeValues, tapedDrawers);
+            int operationNum = discardOperations(tapedDrawers, tapedDrawersNum);
+            optimizeOperationOrder(operationNum);
+            
+            int operationsExecuted = 0;
+            int currentColumn = 4;
+            while (operationsExecuted != operationNum) {
+                if (columnNeedsFood(currentColumn, operationsExecuted)) {
+                    openAllDrawers();
+                    int currentRow = 1;
+                    while (columnNeedsFood(currentColumn, operationsExecuted)) {
+                        if (rowNeedsFood(currentRow, operationsExecuted)) {
+                            Operation o = operations[++operationsExecuted];
+                            determineFoodCount(DIETS[o.dietType], o.dietNum);
+                            countFood();
+                        }
+                        closeDrawer(++currentRow);
+                    }
+                }
+                moveToColumn(currentColumn--);
             }
         }
     }
@@ -87,7 +117,6 @@ void enterStandby(void) {
     __lcd_display_control(1, 1, 0);
 }
 
-
 void createOperation(void) { 
     operations[getOperationNum()].destination = getNewDestination();
     operations[getOperationNum()].dietNum = getNewDietNum();
@@ -106,6 +135,48 @@ void deleteOperation(int num) {
     setDeleteOperation(0);
 }
 
+int discardOperations(int* tapedDrawers, int tapedDrawersNum) {
+    int operationNum = sizeof(operations);
+    for (int i=0; i<operationNum; i++) {
+        for (int j = 0; j < tapedDrawersNum; j++) {
+            if (operations[i].destination == tapedDrawers[j]) {
+                operations[i].destination = operations[i+1].destination;
+                operations[i].dietNum = operations[i+1].dietNum ;
+                operations[i].dietType = operations[i+1].dietType;
+                i--;
+                operationNum--;
+                break;
+            }
+        }
+    }
+    return operationNum;
+}
+
+void optimizeOperationOrder(int operationNum){
+    int accountedOperationNum = 0;
+    int order[] = {1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16};
+    
+    for (int i=0; i<16; i++) {
+        for (int j = accountedOperationNum; j<operationNum; j++) {
+            if (operations[j].destination == order[i]) {
+                Operation temp = operations[accountedOperationNum];
+                operations[accountedOperationNum] = operations[j];
+                operations[j] = temp;
+                accountedOperationNum++;
+                break;
+            }
+        }
+    }
+}
+
+int columnNeedsFood(int column, int operationsExecuted) {
+    return operations[operationsExecuted].destination % 4 == column;
+}
+
+int rowNeedsFood(int row, int operationsExecuted) {
+    return operations[operationsExecuted].destination / 4 == row;
+}
+
 void interrupt interruptHandler(void){
     if (INT1IF) {
         unsigned char keypress = (PORTB & 0xF0) >> 4;
@@ -121,8 +192,8 @@ void interrupt interruptHandler(void){
             if (getInputMode() == MODE_NO_INPUT) currentMachineMode = MODE_STANDBY;
             if (isOperationReady()) createOperation();
             if (needToDeleteOperation()) deleteOperation(getDisplayedOperationNum());
+            if (getInputMode() == MODE_INPUT_COMPLETE) currentMachineMode = MODE_RUNNING;
         }
         INT1IF = 0;
     }
-    
 }

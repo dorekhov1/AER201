@@ -141,12 +141,13 @@ void showPrompt(void) {
     setArduinoToInput('P');
 
     __lcd_display_control(1, 0, 0)
-    printf("Operations ");
-    __lcd_newline();
-    printf("created: %d", operationNum);
     
     int i = 10;
     while (currentInputMode == MODE_INPUT_PROMPT) {
+        __lcd_clear();
+        printf("Operations ");
+        __lcd_newline();
+        printf("created: %d", operationNum);
         __delay_ms(100);
         if (i++==10) {
             printTimeToGLCD();
@@ -165,7 +166,6 @@ void showInput(int num, int diet, int dietN, int dest) {
     __lcd_display_control(1, 0, 0);
     printf("Operation %d", num+1);
     __lcd_newline();
-   
     printf("%sx%d into %d", diet, dietN, dest);
     
     int i = 10;
@@ -199,6 +199,15 @@ void displayDrawerUsedError (void) {
     __delay_ms(1000);
     __lcd_display_control(1, 1, 0);
     memset(input,0,strlen(input));
+}
+
+void displayMaxOperationsError(void) {
+    __lcd_clear();
+    __lcd_home();
+    printf("Operation limit ");
+    __lcd_newline();
+    printf("has been reached. ");
+    __delay_ms(1000);
 }
 
 int isProperInput(void) {
@@ -290,8 +299,12 @@ void processInputInterrupt(char keypress) {
         processNumberInput(keypress);
     }
     else if (currentInputMode == MODE_INPUT_PROMPT) {
-        if (keypress == 12) currentInputMode = MODE_INPUT_DESTINATION;
+        if (keypress == 12) {
+            if (operationNum < 8) currentInputMode = MODE_INPUT_DESTINATION;
+            else displayMaxOperationsError();
+        }
         else if (keypress == 14) currentInputMode = MODE_SHOW_INPUT;
+        else if (keypress == 3) currentInputMode = MODE_INPUT_COMPLETE;
     }
     else if (currentInputMode == MODE_SHOW_INPUT) {
         if (keypress == 11) 
@@ -314,5 +327,4 @@ void processInputInterrupt(char keypress) {
         }
     }
 }
-
 #endif	/* INPUTHANDLER_H */

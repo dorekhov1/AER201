@@ -78,7 +78,7 @@ void displayDietNumInput(int num) {
 void displayPromptInput(void) {
     clearScreen();
     tft.setCursor(5, 15);
-    tft.print("Press * to create a\n new operation.\n Press # to view\n created operations.\n\n To go back to\n standby you must \n delete all created\n operations.");
+    tft.print("Press * to create a\n new operation.\n Press # to view\n created operations.\n Press A to begin\n execution of the\n operations.\n\n To go back to\n standby you must \n delete all created\n operations.");
 }
 
 void displayShowInput(void) {  

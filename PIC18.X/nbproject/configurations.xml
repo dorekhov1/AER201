@@ -17,6 +17,8 @@
       <itemPath>inputHandler.h</itemPath>
       <itemPath>enums.h</itemPath>
       <itemPath>eep.h</itemPath>
+      <itemPath>runmodeHandler.h</itemPath>
+      <itemPath>tapeHandler.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

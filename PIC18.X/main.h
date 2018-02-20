@@ -14,6 +14,8 @@
 #include "configBits.h"
 #include "enums.h"
 #include "inputHandler.h"
+#include "runmodeHandler.h"
+#include "tapeHandler.h"
 #include "I2C.h"
 #include "rtc.h"
 #include "eep.h"
@@ -28,5 +30,10 @@ typedef struct {
 } Operation;
 
 void enterStandby(void);
+int discardOperations(int* tapedDrawers, int tapedDrawersNum);
+void optimizeOperationOrder(int operationNum);
+
+int columnNeedsFood(int currentColumn, int operationsExecuted);
+int rowNeedsFood(int currentRow, int operationsExecuted);
 
 #endif	/* MAIN_H */

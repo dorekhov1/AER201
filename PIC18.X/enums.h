@@ -21,7 +21,8 @@ enum inputMode {
     MODE_INPUT_DIET,
     MODE_INPUT_DIET_NUM,
     MODE_INPUT_PROMPT,
-    MODE_SHOW_INPUT
+    MODE_SHOW_INPUT,
+    MODE_INPUT_COMPLETE
 };
 
 enum diet {
