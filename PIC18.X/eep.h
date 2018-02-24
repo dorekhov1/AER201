@@ -4,6 +4,7 @@
 
 #include <xc.h> // include processor files - each processor file is guarded.  
 #include "main.h"
+#include "math.h"
 
 void write_octet_eep( unsigned char address, unsigned char data )
 {
@@ -56,7 +57,10 @@ void logOperationNum(int operationNum) {
     addLines(1);
 }
 
-void logTime(char  * time) {
+void logTime(void) {
+    unsigned char time[7];
+    readTime(time);
+    
     int currentLine = getCurrentAddress();
     for (int i=0; i<7; i++) {
         write_octet_eep(currentLine+i, time[i]);
@@ -65,12 +69,17 @@ void logTime(char  * time) {
 }
 
 void logTapedDrawers(int* tapedDrawers, int tapedDrawersNum) {
-    int byte = 0;
+    unsigned int byte1 = 0;
+    unsigned int byte2 = 0;
+
     for (int i=0; i<tapedDrawersNum; i++) {
-        byte += 2^(tapedDrawers[i]);
+        if (tapedDrawers[i] <= 8) byte1 += pow(2, tapedDrawers[i]-1);
+        else byte2 += pow(2, tapedDrawers[i]-9);
     }
-    write_octet_eep(getCurrentAddress(), byte);
-    addLines(1);
+    
+    write_octet_eep(getCurrentAddress(), byte1);
+    write_octet_eep(getCurrentAddress()+1, byte2);
+    addLines(2);
 }
 
 void logOperation(int destination, int dietType, int dietNum) {
@@ -79,6 +88,19 @@ void logOperation(int destination, int dietType, int dietNum) {
     write_octet_eep(currentLine+1, dietType);
     write_octet_eep(currentLine+2, dietNum);
     addLines(3);
+}
+
+void logCounts(int rTotalCount, int fTotalCount, int lTotalCount) {
+    int currentLine = getCurrentAddress();
+    write_octet_eep(currentLine, rTotalCount);
+    write_octet_eep(currentLine+1, fTotalCount);
+    write_octet_eep(currentLine+2, lTotalCount);
+    addLines(3);
+}
+
+void logEmergency(int emergencySignal) {
+    write_octet_eep(getCurrentAddress(), emergencySignal);
+    addLines(1);
 }
 
 void sendLogsToPC(void) {

@@ -76,9 +76,15 @@ void main(void) {
     
     I2C_Master_Init(100000);
     
-    cleanEEPROM();
+    //cleanEEPROM();
+    
+    if (read_octet_eep(0) == 255) cleanEEPROM();
+    
+    printf("?: %d", read_octet_eep(0));
+    __delay_ms(1000);
     
     while (1) {
+        
         if (currentMachineMode == MODE_STANDBY) enterStandby();
             
         if (currentMachineMode == MODE_INPUT) {
@@ -96,6 +102,8 @@ void main(void) {
         
         if (currentMachineMode == MODE_RUNNING) {
                 
+            logCreatedOperations(getOperationNum());
+            
             startTopCounters();
                         
             int tapeValues[16];
@@ -104,36 +112,41 @@ void main(void) {
             int tapedDrawers[4];
             int tapedDrawersNum = processTapes(tapeValues, tapedDrawers);
             int operationNum = discardOperations(tapedDrawers, tapedDrawersNum);
-            
-            logCreatedOperations(getOperationNum());
-            logTapedDrawers(tapedDrawers, tapedDrawersNum);
-            sendLogsToPC();
-            
             optimizeOperationOrder(operationNum);
             
-            int operationsExecuted = 0;
-            int currentColumn = 4;
-            while (operationsExecuted != operationNum) {
-                if (columnNeedsFood(currentColumn, operationsExecuted)) {
-                    openAllDrawers();
-                    int currentRow = 1;
-                    while (columnNeedsFood(currentColumn, operationsExecuted)) {
-                        if (rowNeedsFood(currentRow, operationsExecuted)) {
-                            Operation o = operations[++operationsExecuted];
-                            determineFoodCount(DIETS[o.dietType], o.dietNum);
-                            countFood();
-                        }
-                        closeDrawer(++currentRow);
-                    }
-                }
-                moveToColumn(currentColumn--);
-            }
+            
+//            int operationsExecuted = 0;
+//            int currentColumn = 4;
+//            while (operationsExecuted != operationNum) {
+//                if (columnNeedsFood(currentColumn, operationsExecuted)) {
+//                    openAllDrawers();
+//                    int currentRow = 1;
+//                    while (columnNeedsFood(currentColumn, operationsExecuted)) {
+//                        if (rowNeedsFood(currentRow, operationsExecuted)) {
+//                            Operation o = operations[++operationsExecuted];
+//                            determineFoodCount(DIETS[o.dietType], o.dietNum);
+//                            countFood();
+//                        }
+//                        closeDrawer(++currentRow);
+//                    }
+//                }
+//                moveToColumn(currentColumn--);
+//            }
             
             //while pills counted recently
             
+            rTotalCount = 35;
+            fTotalCount = 16;
+            lTotalCount = 27;
+
             stopTopCounters();
             
+            logEmergency(0);
+            logTapedDrawers(tapedDrawers, tapedDrawersNum);
+            logCounts(rTotalCount, fTotalCount, lTotalCount);
+            logTime();
             
+            sendLogsToPC();
             while(1);
         }
     }
@@ -203,14 +216,6 @@ void optimizeOperationOrder(int operationNum){
         for (int j = accountedOperationNum; j<operationNum; j++) {
             if (operations[j].destination == order[i]) {
                 Operation temp = operations[accountedOperationNum];
-                
-//                __lcd_clear();
-//                printf("destination: %d", temp.destination);
-//                __lcd_newline();
-//                printf("diet type: %d", temp.dietType);
-//                __delay_ms(1000);
-                
-                
                 operations[accountedOperationNum] = operations[j];
                 operations[j] = temp;
                 accountedOperationNum++;
@@ -229,17 +234,14 @@ int rowNeedsFood(int row, int operationsExecuted) {
 }
 
 void logCreatedOperations(int operationNum){
-    unsigned char time[7];
     logOperationNum(operationNum);
-    readTime(time);
-    logTime(time);
+    logTime();
     
     for (int i=0; i<operationNum; i++) {
         Operation o = operations[i];        
         logOperation(o.destination, o.dietType, o.dietNum);
     }
     __lcd_clear();
-    printf("line num: %d ", getCurrentAddress());
 }
 
 void interrupt interruptHandler(void){
