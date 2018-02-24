@@ -35,8 +35,8 @@ int processTapes(int* tapeValues, int* tapedDrawers) {
         if (tapeValues[i] < baseline) baseline = tapeValues[i];
     
     for (int i = 0; i < 16; i++) {
-        if ((tapeValues[i] - baseline) < tolerance) tapedDrawers[++tapedDrawersNum] = i+1;
-    }    
+        if ((tapeValues[i] - baseline) > tolerance) tapedDrawers[++tapedDrawersNum] = i+1;
+    }
     
     return tapedDrawersNum;    
 }

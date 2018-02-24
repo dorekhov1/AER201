@@ -1,15 +1,18 @@
 
+
 #include <Wire.h>
 #include <string.h>
 #include "glcdHandler.h"
+#include "actuatorsHandler.h"
 
 void setup(){
   Wire.begin(8); // Join I2C bus with address 8
   Wire.onReceive(receiveEvent); // Register a function to be called when this slave device receives a transmission from a master
   Wire.onRequest(requestEvent); // Register a function to be called when a master requests data from this slave device
 
-  Serial.begin(9600); // Open serial port to PC (hardware UART)     
+ // Serial.begin(9600); // Open serial port to PC (hardware UART)     
   initGlcd();
+  initActuators();
 }
 
 void loop(){
@@ -50,7 +53,8 @@ void processTime(void) {
 
 void processMode(void) {
     if (buffer[1] == 'S') processStandby();
-    if (buffer[1] == 'I') processInput();
+    else if (buffer[1] == 'I') processInput();
+    else if (buffer[1] ==  'R') processRun();
 }
 
 void processInput(void) {
@@ -60,6 +64,11 @@ void processInput(void) {
     else if (buffer[2] == 'Q') displayDietNumInput(buffer[3]);
     else if (buffer[2] == 'P') displayPromptInput();
     else if (buffer[2] == 'S') displayShowInput();
+}
+
+void processRun(void) {
+  if (buffer[2] == 'K') processCounter(buffer[3], buffer[4]);
+  else if (buffer[2] == 'A') processArm(buffer[3]); 
 }
 
 void requestEvent(void){

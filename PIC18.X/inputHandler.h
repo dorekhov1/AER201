@@ -185,7 +185,12 @@ int dietNeedsNum(void) {
 }
 
 int isDrawerUsed(int drawerNum) {
-    for (int i=0; i<sizeof(drawersUsed); i++) if (drawerNum == drawersUsed[i]) return 1;
+    for (int i=0; i<operationNum; i++) {
+        //__lcd_clear();
+        //printf("debug2: %d" , drawersUsed[i]);
+        //__delay_ms(1000);
+        if (drawerNum == drawersUsed[i]) return 1;
+    }
     return 0;
 }
 

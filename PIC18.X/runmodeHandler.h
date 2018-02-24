@@ -11,47 +11,93 @@
 #include <xc.h>
 #include "tapeHandler.h"
 
-void beginTopCounters(void) {
-    //set counters to ON
-    setArduinoToRunTopCounter('R', 'N');
-    setArduinoToRunTopCounter('F', 'N');
-    setArduinoToRunTopCounter('L', 'N');
+int rCount = 0;
+int fCount = 0;
+int lCount = 0;
+
+void startTopCounters(void) {
+    setArduinoToRunCounter('T', 'N');
+}
+
+void stopTopCounters(void) {
+    setArduinoToRunCounter('T', 'F');
+}
+
+void startBottomCounter(char counter) {
+    setArduinoToRunCounter(counter, 'N');
+}
+
+void stopBottomCounter(char counter) {
+    setArduinoToRunCounter(counter, 'F');
+}
+
+void moveToColumn(int column) {
+    //stepper code
 }
 
 void readTapes(int* tapeValues) {
     
-    //NEED DELAYS EVERYWHERE, EXPERIMENTATION!!!!
-
-    setArduinoToRunMovingCabinet('1');
+    //NEED DELAYS EVERYWHERE, EXPERIMENTATION!!!
+    
+    /*moveToColumn(1);
     readTapeColumn(1, tapeValues);
-    setArduinoToRunMovingCabinet('2');
+    moveToColumn(2);
     readTapeColumn(2, tapeValues);
-    setArduinoToRunMovingCabinet('3');
+    moveToColumn(3);
     readTapeColumn(3, tapeValues);
-    setArduinoToRunMovingCabinet('4');
-    readTapeColumn(4, tapeValues);
+    moveToColumn(4);
+    readTapeColumn(4, tapeValues);*/
+    
+    for (int i=0; i<16; i++) {
+        tapeValues[i] = 40;
+    }
 }
 
 void openAllDrawers(void) {
-    
+    setArduinoToRunArm('0');
+}
+
+void closeDrawer(int row) {
+    setArduinoToRunArm(row+'0');
 }
 
 void determineFoodCount(char * diet, int dietNum) {
     
+    rCount = 0;
+    fCount = 0;
+    lCount = 0; 
+    
+    for (int i = 0; i<sizeof(diet); i++) {
+        if (diet[i] == 'R') rCount+=dietNum;
+        else if (diet[i] == 'F') fCount+=dietNum;
+        else if (diet[i] == 'L') lCount+=dietNum;
+    }
 }
 
 void countFood(void) {
+    int rPin = 0, rf = 0, rRun = 0;
+    int fPin = 0, ff = 0, fRun = 0;
+    int lPin = 0, lf = 0, lRun = 0;
     
-}
-
-void closeDrawer(int row) {
+    if (rCount != 0) { startBottomCounter('R'); rRun = 1; }
+    else if (fCount != 0) { startBottomCounter('F'); fRun = 1; }
+    else if (lCount != 0) { startBottomCounter('L'); lRun = 1; }
     
-}
-
-void moveToColumn (int column) {
-    
+    while (rCount!=0 && fCount!=0 && lCount!=0){
+        if (rPin == 1 && rf == 0) rf = 1;
+        else if (rPin == 0 && rf == 1) { rCount--; rf=0; }
+        
+        if (fPin == 1 && ff == 0) ff = 1;
+        else if (fPin == 0 && ff == 1) { fCount--; ff=0; }
+        
+        if (lPin == 1 && lf == 0) lf = 1;
+        else if (lPin == 0 && lf == 1) { lCount--; lf=0; }
+        
+        if (rCount == 0 && rRun == 1) { stopBottomCounter('R'); rRun = 0; }
+        if (fCount == 0 && fRun == 1) { stopBottomCounter('F'); fRun = 0; }
+        if (lCount == 0 && lRun == 1) { stopBottomCounter('L'); lRun = 0; }
+    }
 }
 
 #endif	/* RUNMODEHANDLE
 R_H */
-

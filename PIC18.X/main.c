@@ -17,6 +17,10 @@ unsigned char counter = 0; // Increments each time a byte is sent
 unsigned char keypress; // Stores the data corresponding to the last key press
 unsigned char data; // Holds the data to be sent/received
 
+int rTotalCount = 0;
+int fTotalCount = 0;
+int lTotalCount = 0;
+
 void main(void) {
     
     // <editor-fold defaultstate="collapsed" desc="Machine Configuration">
@@ -42,11 +46,37 @@ void main(void) {
     ADCON1 = 0b00001111; // Set all A/D ports to digital (pg. 222)
     // </editor-fold>
     
+    // <editor-fold defaultstate="collapsed" desc="Initialize EUSART module for asynchronous 9600/8N1">
+    /* Configure the baud rate generator for 9600 bits per second. */
+    long baudRate = 9600;
+    SPBRG = (unsigned char)((_XTAL_FREQ / (64 * baudRate)) - 1);
+    
+    /* Configure transmit control register */
+    TXSTAbits.TX9 = 0; // Use 8-bit transmission (8 data bits, no parity bit)
+    TXSTAbits.SYNC = 0; // Asynchronous communication
+    TXSTAbits.TXEN = 1; // Enable transmitter
+    __delay_ms(5); // Enabling the transmitter requires a few CPU cycles for stability
+    
+    /* Configure receive control register */
+    RCSTAbits.RX9 = 0; // Use 8-bit reception (8 data bits, no parity bit)
+    RCSTAbits.CREN = 1; // Enable receiver
+    
+    /* Enforce correct pin configuration for relevant TRISCx */
+    TRISC6 = 0; // TX = output
+    TRISC7 = 1; // RX = input
+    
+    /* Enable serial peripheral */
+    RCSTAbits.SPEN = 1;
+    // </editor-fold>
+    
     INT1IE = 1; // Enable RB1 (keypad data available) interrupt
     ei(); // Enable all interrupts
     
     initLCD();
+    
     I2C_Master_Init(100000);
+    
+    cleanEEPROM();
     
     while (1) {
         if (currentMachineMode == MODE_STANDBY) enterStandby();
@@ -65,7 +95,8 @@ void main(void) {
         }
         
         if (currentMachineMode == MODE_RUNNING) {
-            beginTopCounters();
+                
+            startTopCounters();
                         
             int tapeValues[16];
             readTapes(tapeValues);
@@ -73,6 +104,11 @@ void main(void) {
             int tapedDrawers[4];
             int tapedDrawersNum = processTapes(tapeValues, tapedDrawers);
             int operationNum = discardOperations(tapedDrawers, tapedDrawersNum);
+            
+            logCreatedOperations(getOperationNum());
+            logTapedDrawers(tapedDrawers, tapedDrawersNum);
+            sendLogsToPC();
+            
             optimizeOperationOrder(operationNum);
             
             int operationsExecuted = 0;
@@ -92,6 +128,13 @@ void main(void) {
                 }
                 moveToColumn(currentColumn--);
             }
+            
+            //while pills counted recently
+            
+            stopTopCounters();
+            
+            
+            while(1);
         }
     }
 }
@@ -136,7 +179,7 @@ void deleteOperation(int num) {
 }
 
 int discardOperations(int* tapedDrawers, int tapedDrawersNum) {
-    int operationNum = sizeof(operations);
+    int operationNum = getOperationNum();
     for (int i=0; i<operationNum; i++) {
         for (int j = 0; j < tapedDrawersNum; j++) {
             if (operations[i].destination == tapedDrawers[j]) {
@@ -160,6 +203,14 @@ void optimizeOperationOrder(int operationNum){
         for (int j = accountedOperationNum; j<operationNum; j++) {
             if (operations[j].destination == order[i]) {
                 Operation temp = operations[accountedOperationNum];
+                
+//                __lcd_clear();
+//                printf("destination: %d", temp.destination);
+//                __lcd_newline();
+//                printf("diet type: %d", temp.dietType);
+//                __delay_ms(1000);
+                
+                
                 operations[accountedOperationNum] = operations[j];
                 operations[j] = temp;
                 accountedOperationNum++;
@@ -177,10 +228,23 @@ int rowNeedsFood(int row, int operationsExecuted) {
     return operations[operationsExecuted].destination / 4 == row;
 }
 
+void logCreatedOperations(int operationNum){
+    unsigned char time[7];
+    logOperationNum(operationNum);
+    readTime(time);
+    logTime(time);
+    
+    for (int i=0; i<operationNum; i++) {
+        Operation o = operations[i];        
+        logOperation(o.destination, o.dietType, o.dietNum);
+    }
+    __lcd_clear();
+    printf("line num: %d ", getCurrentAddress());
+}
+
 void interrupt interruptHandler(void){
-    if (INT1IF) {
+    if (LATCbits.LATC2 == 0 && INT1IF == 1) {
         unsigned char keypress = (PORTB & 0xF0) >> 4;
-        
         if (currentMachineMode == MODE_STANDBY) {
             __lcd_clear();
             __lcd_home();
@@ -192,8 +256,22 @@ void interrupt interruptHandler(void){
             if (getInputMode() == MODE_NO_INPUT) currentMachineMode = MODE_STANDBY;
             if (isOperationReady()) createOperation();
             if (needToDeleteOperation()) deleteOperation(getDisplayedOperationNum());
-            if (getInputMode() == MODE_INPUT_COMPLETE) currentMachineMode = MODE_RUNNING;
+            if (getInputMode() == MODE_INPUT_COMPLETE) {
+                LATCbits.LATC2 = 1; //disable keypad
+                currentMachineMode = MODE_RUNNING;
+            }
         }
         INT1IF = 0;
+    }
+    else if (LATCbits.LATC2 == 1) {
+        if (INT0IF == 1) {
+            rTotalCount++;
+        }
+        else if (INT1IF == 1) {
+            fTotalCount++;
+        }
+        else if (INT2IF == 1){
+            lTotalCount++;
+        }
     }
 }

@@ -35,40 +35,21 @@ void setArduinoToInputNum(int num) {
     sendByteToArduino('C');
 }
 
-void setArduinoToRunTopCounter(char counter, char state) {
+void setArduinoToRunCounter(char counter, char state) {
     sendByteToArduino('M');
     sendByteToArduino('R');
-    sendByteToArduino('T');
+    sendByteToArduino('K'); //Kounter
     sendByteToArduino(counter);
     sendByteToArduino(state);
     sendByteToArduino('C');
 }
 
-void setArduinoToRunBottomCounter(char counter, char state) {
-    sendByteToArduino('M');
-    sendByteToArduino('R');
-    sendByteToArduino('B');
-    sendByteToArduino(counter);
-    sendByteToArduino(state);
-    sendByteToArduino('C');
-}
-
-void setArduinoToRunMovingCabinet(char state) {
-    sendByteToArduino('M');
-    sendByteToArduino('R');
-    sendByteToArduino('M');
-    sendByteToArduino(state);
-    sendByteToArduino('C');
-}
-
-void setArduinoToRunArm(char arm, char state) {
+void setArduinoToRunArm(char arm) {
     sendByteToArduino('M');
     sendByteToArduino('R');
     sendByteToArduino('A');
     sendByteToArduino(arm);
-    sendByteToArduino(state);
     sendByteToArduino('C');
 }
 
 #endif	/* ARDUINO_H */
-
