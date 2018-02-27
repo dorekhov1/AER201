@@ -5,11 +5,10 @@
  * Created on February 2, 2018, 4:45 PM
  */
 
-#ifndef RUNMODEHANDLER_H
-#define	RUNMODEHANDLER_H
+#ifndef RUNNINGMODEHANDLER_H
+#define	RUNNINGMODEHANDLER_H
 
 #include <xc.h>
-#include "tapeHandler.h"
 
 int rCount = 0;
 int fCount = 0;
@@ -33,6 +32,36 @@ void stopBottomCounter(char counter) {
 
 void moveToColumn(int column) {
     //stepper code
+}
+
+unsigned short readTape(unsigned char channel){
+    ADCON0 = (channel & 0x0F) << 2; // Select ADC channel (i.e. pin)
+    ADON = 1; // Enable module
+    ADCON0bits.GO = 1; // Initiate sampling
+    while(ADCON0bits.GO_NOT_DONE){  continue;   } // Poll for acquisition completion
+    return (ADRESH << 8) | ADRESL; // Return result as a 16-bit value
+}
+
+void readTapeColumn(int column, int* tapeValues) {
+    tapeValues[column] = readTape(0); // topmost sensor
+    tapeValues[column + 4] = readTape(0); // second topmost sensor
+    tapeValues[column + 8] = readTape(0); // second bottommost sensor
+    tapeValues[column + 12] = readTape(0); // bottommost sensor
+}
+
+int processTapes(int* tapeValues, int* tapedDrawers) {
+    int tolerance =  10; // need experimentation for these two
+    int baseline = 1000;
+    int tapedDrawersNum = 0;
+    
+    for (int i = 0; i < 16; i++)
+        if (tapeValues[i] < baseline) baseline = tapeValues[i];
+    
+    for (int i = 0; i < 16; i++) {
+        if ((tapeValues[i] - baseline) > tolerance) tapedDrawers[++tapedDrawersNum] = i+1;
+    }
+    
+    return tapedDrawersNum;    
 }
 
 void readTapes(int* tapeValues) {
@@ -67,7 +96,7 @@ void determineFoodCount(char * diet, int dietNum) {
     fCount = 0;
     lCount = 0; 
     
-    for (int i = 0; i<sizeof(diet); i++) {
+    for (unsigned int i = 0; i<sizeof(diet); i++) {
         if (diet[i] == 'R') rCount+=dietNum;
         else if (diet[i] == 'F') fCount+=dietNum;
         else if (diet[i] == 'L') lCount+=dietNum;
@@ -75,9 +104,9 @@ void determineFoodCount(char * diet, int dietNum) {
 }
 
 void countFood(void) {
-    int rPin = 0, rf = 0, rRun = 0;
-    int fPin = 0, ff = 0, fRun = 0;
-    int lPin = 0, lf = 0, lRun = 0;
+    unsigned int rPin = 0, rf = 0, rRun = 0;
+    unsigned int fPin = 0, ff = 0, fRun = 0;
+    unsigned int lPin = 0, lf = 0, lRun = 0;
     
     if (rCount != 0) { startBottomCounter('R'); rRun = 1; }
     else if (fCount != 0) { startBottomCounter('F'); fRun = 1; }
@@ -99,5 +128,5 @@ void countFood(void) {
     }
 }
 
-#endif	/* RUNMODEHANDLE
+#endif	/* RUNNINGMODEHANDLE
 R_H */

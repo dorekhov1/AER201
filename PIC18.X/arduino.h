@@ -7,7 +7,7 @@
 #include "configBits.h"
 #include "I2C.h"
 
-void sendByteToArduino(char byte) {
+void sendByteToArduino(unsigned char byte) {
     I2C_Master_Start(); // Start condition
     I2C_Master_Write(0b00010000); // 7-bit Arduino slave address + write
     I2C_Master_Write(byte);
@@ -20,14 +20,21 @@ void setArduinoToStandby (void) {
     sendByteToArduino('C');
 }
 
-void setArduinoToInput(char byte) {
+void setArduinoToLogs (unsigned char byte) {
+    sendByteToArduino('M');
+    sendByteToArduino('L');
+    sendByteToArduino(byte);
+    sendByteToArduino('C');
+}
+
+void setArduinoToInput(unsigned char byte) {
     sendByteToArduino('M');
     sendByteToArduino('I');
     sendByteToArduino(byte);
     sendByteToArduino('C');
 }
 
-void setArduinoToInputNum(int num) {
+void setArduinoToInputNum(unsigned int num) {
     sendByteToArduino('M');
     sendByteToArduino('I');
     sendByteToArduino('Q');
@@ -35,7 +42,7 @@ void setArduinoToInputNum(int num) {
     sendByteToArduino('C');
 }
 
-void setArduinoToRunCounter(char counter, char state) {
+void setArduinoToRunCounter(unsigned char counter, unsigned char state) {
     sendByteToArduino('M');
     sendByteToArduino('R');
     sendByteToArduino('K'); //Kounter

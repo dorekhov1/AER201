@@ -11,7 +11,12 @@
 enum machineMode {
     MODE_STANDBY,
     MODE_INPUT,
-    MODE_RUNNING
+    MODE_RUNNING,
+    MODE_LOGS  
+};
+
+enum runningMode {
+    
 };
 
 enum inputMode {
@@ -23,6 +28,16 @@ enum inputMode {
     MODE_INPUT_PROMPT,
     MODE_SHOW_INPUT,
     MODE_INPUT_COMPLETE
+};
+
+enum logsMode {
+    MODE_OPERATIONS_COMPLETE, //do you want to log operations or view logs?
+    MODE_LOGS_PROMPT, //not enough memory, do you want to clean EEPROM?
+    MODE_LOGGING, //logs are being saved... 
+    MODE_LOGGING_COMPLETE, //logs are saved! Do you want to view them?
+    MODE_VIEW_LOGS, //attach to PC, press ? to begin transfer
+    MODE_TRANSFERRING_LOGS, //transferring logs... on complete go to standby
+    MODE_RETURN
 };
 
 enum diet {

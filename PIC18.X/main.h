@@ -13,9 +13,9 @@
 #include <stdlib.h>
 #include "configBits.h"
 #include "enums.h"
-#include "inputHandler.h"
-#include "runmodeHandler.h"
-#include "tapeHandler.h"
+#include "inputModeHandler.h"
+#include "runningModeHandler.h"
+#include "logsModeHandler.h"
 #include "I2C.h"
 #include "rtc.h"
 #include "eep.h"
@@ -31,7 +31,9 @@ typedef struct {
     char timeExecuted;
 } Operation;
 
-void enterStandby(void);
+void enterStandbyMode(void);
+void enterLogsMode(void);
+
 int discardOperations(int* tapedDrawers, int tapedDrawersNum);
 void optimizeOperationOrder(int operationNum);
 

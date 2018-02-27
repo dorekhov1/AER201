@@ -5,8 +5,8 @@
  * Created on January 17, 2018, 4:01 PM
  */
 
-#ifndef INPUTHANDLER_H
-#define	INPUTHANDLER_H
+#ifndef INPUTMODEHANDLER_H
+#define	INPUTMODEHANDLER_H
 
 #include <xc.h>
 #include <string.h>
@@ -21,39 +21,42 @@
 
 const char keys[] = "123A456B789C*0#D"; //char array corresponding to the keypad
 
-int newDietType; //type of diet for the operation being created
-int newDietNum; //number to repeat the diet for the operation being created
-int newDestination; //destination drawer for the operation being created
+unsigned int newDietType; //type of diet for the operation being created
+unsigned int newDietNum; //number to repeat the diet for the operation being created
+unsigned int newDestination; //destination drawer for the operation being created
 
-int currentInputMode = MODE_NO_INPUT; //current sub-mode of the MODE_INPUT machine mode
+unsigned int currentInputMode = MODE_NO_INPUT; //current sub-mode of the MODE_INPUT machine mode
 
-int operationNum = 0; //number of operations created
-int displayedOperationNum = 0; //index of the operation currently displayed in the MODE_SHOW_INPUT
-int operationReady = 0; //boolean to tell the main that the operation is ready to be created
-int operationDelete = 0; //boolean to tell the main that the operation needs to be deleted
+unsigned int operationNum = 0; //number of operations created
+unsigned int displayedOperationNum = 0; //index of the operation currently displayed in the MODE_SHOW_INPUT
+unsigned int operationReady = 0; //boolean to tell the main that the operation is ready to be created
+unsigned int operationDelete = 0; //boolean to tell the main that the operation needs to be deleted
 
-char input[16]; //stores the user input
-int drawersUsed[8]; //stores the drawers used to prevent user repeating drawers
+unsigned char input[16]; //stores the user input
+unsigned char message1[16];
+unsigned char message2[16];
+
+unsigned int drawersUsed[8]; //stores the drawers used to prevent user repeating drawers
 
 /***************************GETTERS AND SETTERS***************************/
 
-void setInputMode(int newMode) { currentInputMode = newMode; }
-int getInputMode(void) { return currentInputMode; }
+void setInputMode(unsigned int newMode) { currentInputMode = newMode; }
+unsigned int getInputMode(void) { return currentInputMode; }
 
-int getNewDietType(void) { return newDietType; }
-int getNewDietNum(void) { return newDietNum; }
-int getNewDestination(void) { return newDestination; }
+unsigned int getNewDietType(void) { return newDietType; }
+unsigned int getNewDietNum(void) { return newDietNum; }
+unsigned int getNewDestination(void) { return newDestination; }
 
-int getOperationNum(void) { return operationNum; }
-void setOperationNum(int num) { operationNum = num; }
+unsigned int getOperationNum(void) { return operationNum; }
+void setOperationNum(unsigned int num) { operationNum = num; }
 
-int getDisplayedOperationNum(void) { return displayedOperationNum; }
+unsigned int getDisplayedOperationNum(void) { return displayedOperationNum; }
 
-int needToDeleteOperation(void) { return operationDelete; }
-void setDeleteOperation(int n) { operationDelete = n; }
+unsigned int needToDeleteOperation(void) { return operationDelete; }
+void setDeleteOperation(unsigned int n) { operationDelete = n; }
 
-int isOperationReady(void) { return operationReady; }
-void setOperationReady(int b) { operationReady = b; }
+unsigned int isOperationReady(void) { return operationReady; }
+void setOperationReady(unsigned int b) { operationReady = b; }
 
 /***************************FUNCTIONS***************************/
 
@@ -63,77 +66,50 @@ void clear(void) {
     memset(input,0,strlen(input));
 }
 
+void printToLcd(int hasInput) {
+    __lcd_clear();
+    printf(message1);
+    __lcd_newline();
+    if (hasInput) printf(message2, input);
+    else printf(message2);
+}
+
+void displayAskForMessage(unsigned int mode, unsigned char * mes1) {
+    strncpy(message1, mes1, sizeof(message1) - 1);
+    strncpy(message2, "%s", sizeof(message2) - 1);
+    printToLcd(1);
+    while (currentInputMode == mode);
+}
+
 void askForOperationInput(void) {
     clear();
     setArduinoToInput('E');
     __lcd_display_control(1, 0, 0)
-    printf("Operations ");
-    __lcd_newline();
-    printf("created: %d", operationNum);
-    int i = 10;
-    while (currentInputMode == MODE_EMPTY_INPUT) {
-        __delay_ms(100);
-        if (i++==10) {
-            printTimeToGLCD();
-            i=0;
-        }
-    }
+    strncpy(message1, "Operations ", sizeof(message1) - 1);
+    strncpy(message2, "created: %s ", sizeof(message2) - 1);
+    sprintf(input, "%d", operationNum);    
+    printToLcd(1);
+    while (currentInputMode == MODE_EMPTY_INPUT);
     __lcd_display_control(1, 1, 0)
 }
 
 void askForDestination(void) {    
     clear();
     setArduinoToInput('D');
-    
-    int i = 10;
-    while (currentInputMode == MODE_INPUT_DESTINATION) {
-        __lcd_clear();
-        printf("Target drawer: ");
-        __lcd_newline();
-        printf("%s", input);
-        __delay_ms(100);
-        if (i++==10) {
-            printTimeToGLCD();
-            i=0;
-        }
-    }
+    displayAskForMessage(MODE_INPUT_DESTINATION, "Target drawer: ");
 }
 
 void askForDietType(void) {
     clear();
     setArduinoToInput('F');
-
-    int i = 10;
-    while (currentInputMode == MODE_INPUT_DIET) {
-        __lcd_clear();
-        printf("Diet type: ");
-        __lcd_newline();
-        printf("%s", input);
-        __delay_ms(100);
-        if (i++==10) {
-            printTimeToGLCD();
-            i=0;
-        } 
-    }
+    displayAskForMessage(MODE_INPUT_DIET, "Diet type: ");
 }
 
 void askForDietNum(void) {
     clear();
     if (newDietType-1 == L) setArduinoToInputNum(3);
     else setArduinoToInputNum(2);
-    
-    int i = 10;
-    while (currentInputMode == MODE_INPUT_DIET_NUM) {
-        __lcd_clear();
-        printf("Repeat diet: ");
-        __lcd_newline();
-        printf("%s", input);
-        __delay_ms(100);
-        if (i++==10) {
-            printTimeToGLCD();
-            i=0;
-        }  
-    }
+    displayAskForMessage(MODE_INPUT_DIET_NUM, "Repeat diet: ");
 }
 
 void showPrompt(void) {
@@ -141,19 +117,11 @@ void showPrompt(void) {
     setArduinoToInput('P');
 
     __lcd_display_control(1, 0, 0)
-    
-    int i = 10;
-    while (currentInputMode == MODE_INPUT_PROMPT) {
-        __lcd_clear();
-        printf("Operations ");
-        __lcd_newline();
-        printf("created: %d", operationNum);
-        __delay_ms(100);
-        if (i++==10) {
-            printTimeToGLCD();
-            i=0;
-        }   
-    }
+    strncpy(message1, "Operations ", sizeof(message1) - 1);
+    strncpy(message2, "created: %s ", sizeof(message2) - 1);
+    sprintf(input, "%d", operationNum);
+    printToLcd(1);
+    while (currentInputMode == MODE_INPUT_PROMPT);
     __lcd_display_control(1, 1, 0);
 }
 
@@ -161,21 +129,14 @@ void showInput(int num, int diet, int dietN, int dest) {
     clear();
     setArduinoToInput('S');
     
-    int opNum = num; //this is the weirdest bug of my entire coding career
+    unsigned int opNum = num; //this is the weirdest bug of my entire coding career
     
     __lcd_display_control(1, 0, 0);
     printf("Operation %d", num+1);
     __lcd_newline();
     printf("%sx%d into %d", diet, dietN, dest);
     
-    int i = 10;
-    while (opNum == displayedOperationNum && currentInputMode == MODE_SHOW_INPUT) {        
-        __delay_ms(100);
-        if (i++==10) {
-            printTimeToGLCD();
-            i=0;
-        }     
-    }
+    while (opNum == displayedOperationNum && currentInputMode == MODE_SHOW_INPUT);
     __lcd_display_control(1, 1, 0);
 }
 
@@ -185,12 +146,7 @@ int dietNeedsNum(void) {
 }
 
 int isDrawerUsed(int drawerNum) {
-    for (int i=0; i<operationNum; i++) {
-        //__lcd_clear();
-        //printf("debug2: %d" , drawersUsed[i]);
-        //__delay_ms(1000);
-        if (drawerNum == drawersUsed[i]) return 1;
-    }
+    for (unsigned int i=0; i<operationNum; i++) if (drawerNum == drawersUsed[i]) return 1;
     return 0;
 }
 
@@ -204,6 +160,7 @@ void displayDrawerUsedError (void) {
     __delay_ms(1000);
     __lcd_display_control(1, 1, 0);
     memset(input,0,strlen(input));
+    printToLcd(1);
 }
 
 void displayMaxOperationsError(void) {
@@ -213,6 +170,7 @@ void displayMaxOperationsError(void) {
     __lcd_newline();
     printf("has been reached. ");
     __delay_ms(1000);
+    printToLcd(1);
 }
 
 int isProperInput(void) {
@@ -254,12 +212,18 @@ void displayInputError(void) {
     __delay_ms(1000);
     __lcd_display_control(1, 1, 0);
     memset(input,0,strlen(input));
+    printToLcd(1);
 }
 
 void processNumberInput(char keypress) {
-    if (isNumberInput(keypress) && strlen(input) < 2) 
+    if (isNumberInput(keypress) && strlen(input) < 2) {
         input[strlen(input)] = keys[keypress];
-    else if (keypress == 15) input[strlen(input)-1] = '\0';
+        printToLcd(1);
+    }
+    else if (keypress == 15) {
+        input[strlen(input)-1] = '\0';
+        printToLcd(1);
+    }
     else if (keypress == 7) {
         if (getOperationNum() == 0) currentInputMode = MODE_EMPTY_INPUT;
         else currentInputMode = MODE_INPUT_PROMPT;
@@ -267,7 +231,7 @@ void processNumberInput(char keypress) {
     else if (keypress == 11) {
         if (isProperInput()) {
             if (currentInputMode == MODE_INPUT_DESTINATION) {
-                int drawerNum = atoi(input);
+                unsigned int drawerNum = atoi(input);
                 if (!isDrawerUsed(drawerNum)) {
                     drawersUsed[operationNum] = drawerNum;
                     newDestination = drawerNum;
@@ -326,10 +290,10 @@ void processInputInterrupt(char keypress) {
             operationDelete = 1;
             if (operationNum != 1) currentInputMode = MODE_INPUT_PROMPT;
             else currentInputMode = MODE_EMPTY_INPUT;            
-            for (int i = displayedOperationNum; i<operationNum; i++)
+            for (unsigned int i = displayedOperationNum; i<operationNum; i++)
                 drawersUsed[i] = drawersUsed[i+1];
             displayedOperationNum = 0;
         }
     }
 }
-#endif	/* INPUTHANDLER_H */
+#endif	/* INPUTMODEHANDLER_H */

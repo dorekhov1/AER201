@@ -6,6 +6,8 @@
 #include "main.h"
 #include "math.h"
 
+unsigned char recordedTime[7];
+
 void write_octet_eep( unsigned char address, unsigned char data )
 {
     while( EECON1bits.WR  )     // make sure it's not busy with an earlier write.
@@ -44,7 +46,7 @@ void cleanEEPROM(void){
     write_octet_eep(0,1);
 }
 
-void addLines(int num) {
+void addLines(unsigned int num) {
     write_octet_eep(0, read_octet_eep(0)+num);
 }
 
@@ -52,23 +54,24 @@ int getCurrentAddress(void) {
     return read_octet_eep(0);
 }
 
-void logOperationNum(int operationNum) {
+void logOperationNum(unsigned int operationNum) {
     write_octet_eep(getCurrentAddress(), operationNum);
     addLines(1);
 }
 
 void logTime(void) {
-    unsigned char time[7];
-    readTime(time);
-    
-    int currentLine = getCurrentAddress();
+    unsigned int currentLine = getCurrentAddress();
     for (int i=0; i<7; i++) {
-        write_octet_eep(currentLine+i, time[i]);
+        write_octet_eep(currentLine+i, recordedTime[i]);
     }
     addLines(7);    
 }
 
-void logTapedDrawers(int* tapedDrawers, int tapedDrawersNum) {
+void recordTime(void) {
+    readTime(recordedTime);
+}
+
+void logTapedDrawers(unsigned int* tapedDrawers, unsigned int tapedDrawersNum) {
     unsigned int byte1 = 0;
     unsigned int byte2 = 0;
 
@@ -82,7 +85,7 @@ void logTapedDrawers(int* tapedDrawers, int tapedDrawersNum) {
     addLines(2);
 }
 
-void logOperation(int destination, int dietType, int dietNum) {
+void logOperation(unsigned int destination, unsigned int dietType, unsigned int dietNum) {
     int currentLine = getCurrentAddress();
     write_octet_eep(currentLine, destination);
     write_octet_eep(currentLine+1, dietType);
@@ -98,11 +101,6 @@ void logCounts(int rTotalCount, int fTotalCount, int lTotalCount) {
     addLines(3);
 }
 
-void logEmergency(int emergencySignal) {
-    write_octet_eep(getCurrentAddress(), emergencySignal);
-    addLines(1);
-}
-
 void sendLogsToPC(void) {
     int linesNum = read_octet_eep(0);
     unsigned char byte;
@@ -110,7 +108,7 @@ void sendLogsToPC(void) {
     for (int i=0; i<linesNum; i++) {
         byte = read_octet_eep(i);
         TXREG =  byte;
-        __delay_ms(10);
+        __delay_ms(1);
     }
 }
 

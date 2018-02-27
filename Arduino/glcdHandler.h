@@ -21,9 +21,10 @@ void initGlcd(void) {
 void printTime(char * timeString) {
     tft.fillRect(0, 0, tft.width(), 10, ST7735_BLUE);
     tft.setCursor(5, 1);
-    tft.setTextColor(ST7735_BLACK);
+    tft.setTextColor(ST7735_WHITE);
     tft.setTextWrap(true);
     tft.print(timeString);
+    tft.setTextColor(ST7735_BLACK);
 }
 
 void clearScreen(){
@@ -34,25 +35,25 @@ void processStandby(void) {
 	clearScreen();
     tft.fillRect(0, 10, tft.width(), tft.height()-10, ST7735_WHITE);
     tft.setCursor(5, 15);
-    tft.print("Welcome! \n\n Please load the food into the reservoirs. \n\n Then, press any \n button to begin.");
+    tft.print(F("Welcome! \n\n Please load the food into the reservoirs. \n\n Then, press A \n to begin.\n\n Press # to \n transfer logs to PC."));
 }
 
 void drawLegend(void) {
     tft.fillRect(0, tft.height()-20, tft.width(), tft.height(), ST7735_BLUE);
     tft.setCursor(5, tft.height()-19);
-    tft.print("Legend: B-go back, \n C-continue, D-delete");
+    tft.print(F("Legend: B-go back, \n C-continue, D-delete"));
 }
 
 void displayEmptyInput(void) {
     clearScreen();
     tft.setCursor(5, 15);
-    tft.print("Press * to create a \n new operation. \n\n Press B to go back  \n to standby.");
+    tft.print(F("Press * to create a \n new operation. \n\n Press B to go back  \n to standby."));
 }
 
 void displayDestinationInput(void) {
     clearScreen();
     tft.setCursor(5, 15);
-    tft.print("Input the \n destination drawer. \n\n Value must be \n from 1 to 16.");
+    tft.print(F("Input the \n destination drawer. \n\n Value must be \n from 1 to 16."));
 
     drawLegend();
 }
@@ -60,7 +61,7 @@ void displayDestinationInput(void) {
 void displayDietInput(void) {
     clearScreen();
     tft.setCursor(5, 15);
-    tft.print("Input diet type: \n\n R-1 F-2 L-3 RF-4 \n RL-5 FL-6 RRF-7 \n RRL-8 RFF-9 RLL-10 \n RFL-11 FFL-12 FLL-13\n RRFL-14 RFFL-15 \n RFLL-16 RLLL-17 \n FLLL-18");
+    tft.print(F("Input diet type: \n\n R-1 F-2 L-3 RF-4 \n RL-5 FL-6 RRF-7 \n RRL-8 RFF-9 RLL-10 \n RFL-11 FFL-12 FLL-13\n RRFL-14 RFFL-15 \n RFLL-16 RLLL-17 \n FLLL-18"));
 
     drawLegend();
 }
@@ -78,12 +79,50 @@ void displayDietNumInput(int num) {
 void displayPromptInput(void) {
     clearScreen();
     tft.setCursor(5, 15);
-    tft.print("Press * to create a\n new operation.\n Press # to view\n created operations.\n Press A to begin\n execution of the\n operations.\n\n To go back to\n standby you must \n delete all created\n operations.");
+    tft.print(F("Press * to create a\n new operation.\n Press # to view\n created operations.\n Press A to begin\n execution of the\n operations.\n\n To go back to\n standby you must \n delete all created\n operations."));
 }
 
 void displayShowInput(void) {  
     clearScreen();
     tft.setCursor(5, 15);
-    tft.print("Press B to go back.\n Press C to view next\n operation.\n Press D to delete\n this operation.");
+    tft.print(F("Press B to go back.\n Press C to view next\n operation.\n Press D to delete\n this operation."));
 }
+
+
+void displayOperationsComplete(void) {
+    clearScreen();
+    tft.setCursor(5, 15);
+    tft.print(F("Press C to log \n operations.\n\n Press # to view logs\n\n Press B to go to\n standby."));
+}
+
+void displayLogsPrompt(void) {  
+    clearScreen();
+    tft.setCursor(5, 15);
+    tft.print(F("EPPROM memory is \n\n filled. \n Press D to clear\n memory. \n\n Press # to view logs\n\n Press B to go to\n standby."));
+}
+
+void displayLogging(void) { 
+    clearScreen();
+    tft.setCursor(5, 15);
+    tft.print(F("Logging is in\n progress. \n\n Do not turn off \n the machine!"));
+}
+
+void displayLoggingComplete(void) {  
+    clearScreen();
+    tft.setCursor(5, 15);
+    tft.print(F("Logging is complete! \n\n Press # to view logs\n\n Press B to go to\n standby."));
+}
+
+void displayViewLogs(void) {  
+    clearScreen();
+    tft.setCursor(5, 15);
+    tft.print(F("Connect the USB port\n with PC's COM1 \n USB port and \n run the script. \n\n Then, press C to \n begin log transfer. \n\n Press B to go to\n standby."));
+}
+
+void displayTransferringLogs(void) {  
+    clearScreen();
+    tft.setCursor(5, 15);
+    tft.print(F("Transferring logs \n is in progress! \n\n Do not detach the \n USB or turn off \n the machine or PC."));
+}
+
 #endif	/* INPUTHANDLER_H */

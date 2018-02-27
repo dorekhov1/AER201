@@ -10,7 +10,7 @@ void setup(){
   Wire.onReceive(receiveEvent); // Register a function to be called when this slave device receives a transmission from a master
   Wire.onRequest(requestEvent); // Register a function to be called when a master requests data from this slave device
 
- // Serial.begin(9600); // Open serial port to PC (hardware UART)     
+  Serial.begin(9600); // Open serial port to PC (hardware UART)     
   initGlcd();
   initActuators();
 }
@@ -19,7 +19,7 @@ void loop(){
 
 }
 
-char buffer[10];
+char buffer[9];
 uint8_t b_count = 0;
 void receiveEvent(void){
   /* This function is called whenver a transmission is received from a master.
@@ -55,6 +55,7 @@ void processMode(void) {
     if (buffer[1] == 'S') processStandby();
     else if (buffer[1] == 'I') processInput();
     else if (buffer[1] ==  'R') processRun();
+    else if (buffer[1] == 'L') processLogs();
 }
 
 void processInput(void) {
@@ -64,6 +65,15 @@ void processInput(void) {
     else if (buffer[2] == 'Q') displayDietNumInput(buffer[3]);
     else if (buffer[2] == 'P') displayPromptInput();
     else if (buffer[2] == 'S') displayShowInput();
+}
+
+void processLogs(void) {
+    if (buffer[2] == 'O') displayOperationsComplete();
+    else if (buffer[2] == 'P') displayLogsPrompt();
+    else if (buffer[2] == 'L') displayLogging();
+    else if (buffer[2] == 'D') displayLoggingComplete();
+    else if (buffer[2] == 'V') displayViewLogs();
+    else if (buffer[2] == 'T') displayTransferringLogs();
 }
 
 void processRun(void) {
