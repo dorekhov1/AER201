@@ -98,7 +98,7 @@ unsigned int enoughSpace(void) {
     return (256 - getCurrentAddress()) >  (20 + 3 *getOperationNum());
 }
 
-void processLogsInterrupt(char keypress){
+void processLogsInterrupt(char keypress) {
     if (currentLogsMode == MODE_OPERATIONS_COMPLETE) {
         if (keypress == 7) currentLogsMode = MODE_RETURN;
         else if (keypress == 14) currentLogsMode = MODE_VIEW_LOGS;

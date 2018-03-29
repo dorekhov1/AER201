@@ -88,7 +88,6 @@ void displayShowInput(void) {
     tft.print(F("Press B to go back.\n Press C to view next\n operation.\n Press D to delete\n this operation."));
 }
 
-
 void displayOperationsComplete(void) {
     clearScreen();
     tft.setCursor(5, 15);
@@ -98,7 +97,7 @@ void displayOperationsComplete(void) {
 void displayLogsPrompt(void) {  
     clearScreen();
     tft.setCursor(5, 15);
-    tft.print(F("EPPROM memory is \n\n filled. \n Press D to clear\n memory. \n\n Press # to view logs\n\n Press B to go to\n standby."));
+    tft.print(F("EPPROM memory is\n filled. \n\n Press D to clear\n memory. \n\n Press # to view logs\n\n Press B to go to\n standby."));
 }
 
 void displayLogging(void) { 
@@ -123,6 +122,28 @@ void displayTransferringLogs(void) {
     clearScreen();
     tft.setCursor(5, 15);
     tft.print(F("Transferring logs \n is in progress! \n\n Do not detach the \n USB or turn off \n the machine or PC."));
+}
+
+void displayRunmodePrompt(int top, int r, int f, int l, int cartPos, int cartMoving, int arm1, int arm2, int arm3, int arm4, int opening) {
+    clearScreen();
+    tft.setCursor(5, 15);
+    char s[100] = "Counters running:\n";
+
+    if (top) sprintf(s, "%s %s", s, "Top");
+    if (r) sprintf(s, "%s %s", s, "R");
+    if (f) sprintf(s, "%s %s", s, "F");
+    if (l) sprintf(s, "%s %s", s, "L");
+
+    if (cartMoving) sprintf(s, "%s\n\n Cart moving \n to position: %d", s, cartPos);
+    else sprintf(s, "%s\n\n Cart position: %d", s, cartPos);
+
+    if (opening) sprintf(s, "%s\n\n Opening drawers", s);
+    else if (arm1) sprintf(s, "%s\n\n Closing drawer: \n row 1", s);
+    else if (arm2) sprintf(s, "%s\n\n Closing drawer: \n row 2", s);
+    else if (arm3) sprintf(s, "%s\n\n Closing drawer: \n row 3", s);
+    else if (arm4) sprintf(s, "%s\n\n Closing drawer: \n row 4", s);
+    
+    tft.print(s);
 }
 
 #endif	/* INPUTHANDLER_H */

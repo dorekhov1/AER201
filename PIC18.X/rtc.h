@@ -36,7 +36,7 @@ void printTimeToGLCD() {
     unsigned char i;
     
     readTime(time);
-    
+    __delay_ms(15);
     sendByteToArduino('T');
     for(i = 0; i < 7; i++){
         sendByteToArduino(time[i]);

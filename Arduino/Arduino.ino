@@ -1,5 +1,3 @@
-
-
 #include <Wire.h>
 #include <string.h>
 #include "glcdHandler.h"
@@ -10,25 +8,20 @@ void setup(){
   Wire.onReceive(receiveEvent); // Register a function to be called when this slave device receives a transmission from a master
   Wire.onRequest(requestEvent); // Register a function to be called when a master requests data from this slave device
 
-  Serial.begin(9600); // Open serial port to PC (hardware UART)     
   initGlcd();
   initActuators();
+    Serial.begin(9600);
 }
 
 void loop(){
-
+  checkServos();
+  checkMoving();
 }
 
 char buffer[9];
 uint8_t b_count = 0;
-void receiveEvent(void){
-  /* This function is called whenver a transmission is received from a master.
-   * 
-   * Arguments: none
-   * 
-   * Returns: none
-   */
 
+void receiveEvent(void){
   char b = Wire.read();
 
   if (b == 'C') processBuffer();
@@ -79,6 +72,7 @@ void processLogs(void) {
 void processRun(void) {
   if (buffer[2] == 'K') processCounter(buffer[3], buffer[4]);
   else if (buffer[2] == 'A') processArm(buffer[3]); 
+  else if (buffer[2] == 'M') processMoving(buffer[3]);
 }
 
 void requestEvent(void){
@@ -91,4 +85,22 @@ void requestEvent(void){
    
   //Wire.write(incomingByte); // Respond with message of 1 byte
   //incomingByte = 0; // Clear output buffer
+}
+
+
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+  
+    if (inChar == '1') runArm(firstArm, 1);
+    else if (inChar == '2') runArm(secondArm, 0);
+    else if (inChar == '3') runArm(thirdArm, 0);
+    else if (inChar == '4') runArm(fourthArm, 0);
+    else if (inChar == 'A') runArms();
+    else if (inChar == 'B') runBackArm();
+    else if (inChar == 'O') processMoving(0);
+    else if (inChar == 'T') processMoving(1);
+    else if (inChar == 'H') processMoving(2);
+    else if (inChar == 'F') processMoving(3);
+  }
 }

@@ -21,6 +21,7 @@
       <itemPath>main.h</itemPath>
       <itemPath>enums.h</itemPath>
       <itemPath>eep.h</itemPath>
+      <itemPath>timer.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

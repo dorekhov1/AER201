@@ -27,6 +27,13 @@ void setArduinoToLogs (unsigned char byte) {
     sendByteToArduino('C');
 }
 
+void setArduinoToDisplayLogs () {
+    sendByteToArduino('M');
+    sendByteToArduino('D');
+    
+    sendByteToArduino('C');
+}
+
 void setArduinoToInput(unsigned char byte) {
     sendByteToArduino('M');
     sendByteToArduino('I');
@@ -42,7 +49,7 @@ void setArduinoToInputNum(unsigned int num) {
     sendByteToArduino('C');
 }
 
-void setArduinoToRunCounter(unsigned char counter, unsigned char state) {
+void setArduinoToRunCounter(unsigned char counter, int state) {
     sendByteToArduino('M');
     sendByteToArduino('R');
     sendByteToArduino('K'); //Kounter
@@ -56,6 +63,14 @@ void setArduinoToRunArm(char arm) {
     sendByteToArduino('R');
     sendByteToArduino('A');
     sendByteToArduino(arm);
+    sendByteToArduino('C');
+}
+
+void setArduinoToRunMoving(int pos) {
+    sendByteToArduino('M');
+    sendByteToArduino('R');
+    sendByteToArduino('M');
+    sendByteToArduino(pos);
     sendByteToArduino('C');
 }
 

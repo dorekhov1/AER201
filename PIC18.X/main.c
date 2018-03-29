@@ -33,6 +33,10 @@ unsigned int secondsWithoutL = 0;
 unsigned int tapedDrawers[4];
 unsigned int tapedDrawersNum = 0;
 
+unsigned int rTime = 0;
+unsigned int fTime = 0;
+unsigned int lTime = 0;
+
 void main(void) {
     
     // <editor-fold defaultstate="collapsed" desc="Machine Configuration">
@@ -55,7 +59,8 @@ void main(void) {
     
     /************************** A/D Converter Module **************************/
     ADCON0 = 0x00;  // Disable ADC
-    ADCON1 = 0b00001111; // Set all A/D ports to digital (pg. 222)
+    ADCON1 = 0x0B;  // RA0-3 are analog (pg. 222)
+    ADCON2bits.ADFM = 1; // Right justify A/D result
     
     /***************************** Timer 0 Module *****************************/
     T0CONbits.T08BIT = 0;
@@ -63,9 +68,10 @@ void main(void) {
     T0CONbits.PSA = 0;
     T0CONbits.T0PS2 = 1;
     T0CONbits.T0PS1 = 1;
-    T0CONbits.T0PS0 = 0;
-    TMR0H = 0x67;
-    TMR0L = 0x69;
+    T0CONbits.T0PS0 = 1;
+    // The following for an interrupt ever 0.1s
+    TMR0H = 0xF2;
+    TMR0L = 0xC0;
     T0CONbits.TMR0ON = 1;
     TMR0IE = 1;
     
@@ -100,6 +106,13 @@ void main(void) {
     initLCD();
     
     I2C_Master_Init(100000);
+    
+    TRISCbits.RC0 = 1;
+    TRISCbits.RC1 = 1;
+    TRISCbits.RC2 = 1;
+    
+    TRISCbits.RC5 = 0;
+    LATCbits.LATC5 = 0;
        
     if (read_octet_eep(1) == 255) cleanEEPROM();
     
@@ -121,44 +134,99 @@ void main(void) {
         }
         
         if (currentMachineMode == MODE_RUNNING) {
+            __lcd_display_control(1, 0, 0)
+            INT0IE = 1; // Enable RB0 (keypad data available) interrupt
+            INT1IE = 1; // Enable RB1 (keypad data available) interrupt
+            INT2IE = 1; // Enable RB2 (keypad data available) interrupt
             
-//            startTopCounters();
-//                        
+            INTCON2bits.INTEDG0 = 1;  // rising edge
+            INTCON2bits.INTEDG1 = 1;  // rising edge
+            INTCON2bits.INTEDG2 = 1;  // rising edge
+            
+            __delay_ms(100);
+            
+            rTotalCount = 0;
+            fTotalCount = 0;
+            lTotalCount = 0;
+            
+            secondsWithoutR = 0;
+            secondsWithoutF = 0;
+            secondsWithoutL = 0;
+            
+            startTopCounters();
+            
 //            int tapeValues[16];
 //            readTapes(tapeValues);
 //            tapedDrawersNum = processTapes(tapeValues, tapedDrawers);
 //            operationNum = discardOperations(tapedDrawers, tapedDrawersNum);
-//            optimizeOperationOrder(operationNum);
-//            
-//            int operationsExecuted = 0;
-//            int currentColumn = 4;
-//            while (operationsExecuted != operationNum) {
-//                if (columnNeedsFood(currentColumn, operationsExecuted)) {
-//                    openAllDrawers();
-//                    int currentRow = 1;
-//                    while (columnNeedsFood(currentColumn, operationsExecuted)) {
-//                        if (rowNeedsFood(currentRow, operationsExecuted)) {
-//                            Operation o = operations[++operationsExecuted];
-//                            determineFoodCount(DIETS[o.dietType], o.dietNum);
-//                            countFood();
-//                        }
-//                        closeDrawer(++currentRow);
-//                    }
-//                }
-//                moveToColumn(currentColumn--);
-//            }
             
-            //while pills counted recently
+            optimizeOperationOrder(getOperationNum());
             
-            //stopTopCounters();
+            int operationsExecuted = 0;
+            int currentColumn = 0;
+            while (operationsExecuted != operationNum) {
+                if (currentColumn != 0) {
+                    __lcd_clear();
+                    printf("Moving to ");
+                    __lcd_newline();
+                    printf("column %d", currentColumn+1);
+                    moveToColumn(currentColumn);
+                }
+                Operation o = operations[operationsExecuted];
+                if (columnNeedsFood(currentColumn, operationsExecuted)) {
+                    __lcd_clear();
+                    printf("Opening drawers");
+                    __lcd_newline();
+                    printf("column %d", currentColumn+1);
+                    openAllDrawers();
+                    int currentRow = 0;
+                    while (currentRow < 4) {
+                        if (rowNeedsFood(currentRow, operationsExecuted)) {
+                            if (!drawerIsTaped(currentRow)) {
+                            __lcd_clear();
+                            printf("Dispensing:");
+                            __lcd_newline();
+                            printf("%sx%d into %d", DIETS[o.dietType-1], o.dietNum, o.destination);
+                                determineFoodCount(DIETS[o.dietType-1], o.dietNum);
+                                countFood();
+                            }
+                            operationsExecuted = operationsExecuted + 1;
+                            __delay_ms(1000);
+                        }
+                        __lcd_clear();
+                        printf("Closing drawer");
+                        __lcd_newline();
+                        printf("row %d", currentRow+1);
+                        closeDrawer(currentRow);
+                        currentRow = currentRow+1;
+                    }
+                }
+                currentColumn = currentColumn + 1;
+            }
+            moveToColumn(0);
+            
+            while (secondsWithoutR < 10 || secondsWithoutF < 10 || secondsWithoutL < 10);
+            
+            LATCbits.LATC5 = 0; //enable keypad
+            stopTopCounters();
+            
+            __lcd_clear();
+            printf("Total count: ");
+            __lcd_newline();
+            printf("R: %d F: %d L: %d", rTotalCount, fTotalCount, lTotalCount);
+            __delay_ms(5000);
+            
+            INT0IE = 0;
+            INT1IE = 1;
+            INT2IE = 0;
             
             recordTime();
-            LATCbits.LATC2 = 0; //enable keypad
+            LATCbits.LATC5 = 0; //enable keypad
             currentMachineMode = MODE_LOGS;
             setLogsMode(MODE_OPERATIONS_COMPLETE);
             setFromStandby(0);
             setLogsSaved(0);
-
+            __lcd_display_control(1, 1, 0)
         }
         
         if (currentMachineMode == MODE_LOGS) {
@@ -234,6 +302,7 @@ int discardOperations(int* tapedDrawers, int tapedDrawersNum) {
 void optimizeOperationOrder(int operationNum){
     int accountedOperationNum = 0;
     int order[] = {1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16};
+//    int order[] = {4, 8, 12, 16, 3, 7, 11, 15, 2, 6, 10, 14, 1, 5, 9, 13};
     
     for (int i=0; i<16; i++) {
         for (int j = accountedOperationNum; j<operationNum; j++) {
@@ -249,11 +318,25 @@ void optimizeOperationOrder(int operationNum){
 }
 
 int columnNeedsFood(int column, int operationsExecuted) {
-    return operations[operationsExecuted].destination % 4 == column;
+    
+    int dest = operations[operationsExecuted].destination;
+    
+    if (dest == 1 || dest == 5 || dest == 9 || dest == 13) return column == 0;
+    else if (dest == 2 || dest == 6 || dest == 10 || dest == 14) return column == 1;
+    else if (dest == 3 || dest == 7 || dest == 11 || dest == 15) return column == 2;
+    else if (dest == 4 || dest == 8 || dest == 12 || dest == 16) return column == 3;
+    return 0;
 }
 
 int rowNeedsFood(int row, int operationsExecuted) {
-    return operations[operationsExecuted].destination / 4 == row;
+    int dest = operations[operationsExecuted].destination;
+    
+    if (dest == 1 || dest == 2 || dest == 3 || dest == 4) return row == 0;
+    else if (dest == 5 || dest == 6 || dest == 7 || dest == 8) return row == 1;
+    else if (dest == 9 || dest == 10 || dest == 11 || dest == 12) return row == 2;
+    else if (dest == 13 || dest == 14 || dest == 15 || dest == 16) return row == 3;
+    
+    return 0;
 }
 
 void logCreatedOperations(int operationNum){
@@ -267,7 +350,7 @@ void logCreatedOperations(int operationNum){
 }
 
 void interrupt interruptHandler(void){
-    if (LATCbits.LATC2 == 0 && INT1IF == 1) {
+    if (LATCbits.LATC5 == 0 && INT1IF == 1) {
         unsigned char keypress = (PORTB & 0xF0) >> 4;
         if (currentMachineMode == MODE_STANDBY) {
             if (keypress == 3) {
@@ -286,7 +369,7 @@ void interrupt interruptHandler(void){
             if (isOperationReady()) createOperation();
             if (needToDeleteOperation()) deleteOperation(getDisplayedOperationNum());
             if (getInputMode() == MODE_INPUT_COMPLETE) {
-                LATCbits.LATC2 = 1; //disable keypad
+                LATCbits.LATC5 = 1; //disable keypad
                 currentMachineMode = MODE_RUNNING;
             }
         }
@@ -296,31 +379,52 @@ void interrupt interruptHandler(void){
         }
         INT1IF = 0;
     }
-    else if (LATCbits.LATC2 == 1) {
-        if (INT0IF == 1) {
-            rTotalCount++;
-            rPassedRecently = 1;
-            secondsWithoutR = 0;
+    if (LATCbits.LATC5 == 1) {
+        
+        if (INT0IF == 1) {   
+            if(readTimer() - rTime > 8) {
+                rTime = readTimer();
+                rTotalCount++;
+                rPassedRecently = 1;
+                secondsWithoutR = 0;
+                INT0IF = 0;
+            }
         }
-        else if (INT1IF == 1) {
-            fTotalCount++;
-            fPassedRecently = 1;
-            secondsWithoutF = 0;
+        if (INT1IF == 1) {
+            if (readTimer() - fTime > 8) {
+                fTime = readTimer();
+                fTotalCount++;
+                fPassedRecently = 1;
+                secondsWithoutF = 0;
+                INT1IF = 0;
+            }
         }
-        else if (INT2IF == 1){
-            lTotalCount++;
-            lPassedRecently = 1;
-            secondsWithoutL = 0;
+        if (INT2IF == 1){
+            if (readTimer() - lTime > 8) {
+                lTime = readTimer();
+                lTotalCount++;
+                lPassedRecently = 1;
+                secondsWithoutL = 0;
+                INT2IF = 0;
+            }
         }
     }
-    else if (TMR0IF == 1) {
-        printTimeToGLCD();
+    if (TMR0IF == 1) {       
+        TMR0H = 0xF2;
+        TMR0L = 0xC0;
         TMR0IF = 0;
-        
-        if (currentMachineMode == MODE_RUNNING) {
-            if (!rPassedRecently) secondsWithoutR++;
-            if (!fPassedRecently) secondsWithoutF++;
-            if (!lPassedRecently) secondsWithoutL++;
+        increaseTimeCount();
+        if (readTimer() % 10 == 0) {
+            printTimeToGLCD();
+            if (currentMachineMode == MODE_RUNNING) {
+                if (!rPassedRecently) secondsWithoutR++;
+                if (!fPassedRecently) secondsWithoutF++;
+                if (!lPassedRecently) secondsWithoutL++;
+
+                rPassedRecently = 0;
+                fPassedRecently = 0;
+                lPassedRecently = 0;
+            }
         }
     } 
 }

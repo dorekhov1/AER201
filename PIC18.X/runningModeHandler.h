@@ -9,29 +9,47 @@
 #define	RUNNINGMODEHANDLER_H
 
 #include <xc.h>
+#include "lcd.h"
+#include "timer.h"
 
 int rCount = 0;
 int fCount = 0;
 int lCount = 0;
 
 void startTopCounters(void) {
-    setArduinoToRunCounter('T', 'N');
+    setArduinoToRunCounter('T', 1);
 }
 
 void stopTopCounters(void) {
-    setArduinoToRunCounter('T', 'F');
+    setArduinoToRunCounter('T', 0);
 }
 
 void startBottomCounter(char counter) {
-    setArduinoToRunCounter(counter, 'N');
+    setArduinoToRunCounter(counter, 1);
 }
 
 void stopBottomCounter(char counter) {
-    setArduinoToRunCounter(counter, 'F');
+    setArduinoToRunCounter(counter, 0);
 }
 
 void moveToColumn(int column) {
-    //stepper code
+    setArduinoToRunMoving(column);
+    __delay_ms(2000);
+}
+
+void openAllDrawers(void) {
+    setArduinoToRunArm('B');
+    __delay_ms(1000);
+}
+
+void closeAllDrawers(void) {
+    setArduinoToRunArm('A');
+    __delay_ms(1000);
+}
+
+void closeDrawer(int row) {
+    setArduinoToRunArm(row+'0');
+    __delay_ms(1000);
 }
 
 unsigned short readTape(unsigned char channel){
@@ -43,10 +61,20 @@ unsigned short readTape(unsigned char channel){
 }
 
 void readTapeColumn(int column, int* tapeValues) {
-    tapeValues[column] = readTape(0); // topmost sensor
-    tapeValues[column + 4] = readTape(0); // second topmost sensor
-    tapeValues[column + 8] = readTape(0); // second bottommost sensor
-    tapeValues[column + 12] = readTape(0); // bottommost sensor
+    moveToColumn(column);
+    openAllDrawers();
+    
+//    tapeValues[column] = readTape(0); // topmost sensor
+//    tapeValues[column + 4] = readTape(0); // second topmost sensor
+//    tapeValues[column + 8] = readTape(0); // second bottommost sensor
+//    tapeValues[column + 12] = readTape(0); // bottommost sensor
+    
+    tapeValues[column] = 700; // topmost sensor
+    tapeValues[column + 4] = 700; // second topmost sensor
+    tapeValues[column + 8] = 700; // second bottommost sensor
+    tapeValues[column + 12] = 700; // bottommost sensor
+    
+    closeAllDrawers();
 }
 
 int processTapes(int* tapeValues, int* tapedDrawers) {
@@ -65,33 +93,26 @@ int processTapes(int* tapeValues, int* tapedDrawers) {
 }
 
 void readTapes(int* tapeValues) {
-    
-    //NEED DELAYS EVERYWHERE, EXPERIMENTATION!!!
-    
-    /*moveToColumn(1);
     readTapeColumn(1, tapeValues);
-    moveToColumn(2);
     readTapeColumn(2, tapeValues);
-    moveToColumn(3);
     readTapeColumn(3, tapeValues);
-    moveToColumn(4);
-    readTapeColumn(4, tapeValues);*/
-    
-    for (int i=0; i<16; i++) {
-        tapeValues[i] = 40;
-    }
-}
+    readTapeColumn(4, tapeValues);
+ }
 
-void openAllDrawers(void) {
-    setArduinoToRunArm('0');
-}
-
-void closeDrawer(int row) {
-    setArduinoToRunArm(row+'0');
+int drawerIsTaped(int currentRow) {
+    return 0;
+//    
+//    __delay_ms(1000);
+//    unsigned int reading = readTape(currentRow);
+//    __lcd_clear();
+//    printf("Channel:%d", currentRow);
+//    __lcd_newline();
+//    printf("Tape:%.3d", reading);
+//    __delay_ms(1000);
+//    return reading < 800;
 }
 
 void determineFoodCount(char * diet, int dietNum) {
-    
     rCount = 0;
     fCount = 0;
     lCount = 0; 
@@ -104,27 +125,40 @@ void determineFoodCount(char * diet, int dietNum) {
 }
 
 void countFood(void) {
-    unsigned int rPin = 0, rf = 0, rRun = 0;
-    unsigned int fPin = 0, ff = 0, fRun = 0;
-    unsigned int lPin = 0, lf = 0, lRun = 0;
+
+    unsigned int rf = 0;
+    unsigned int rRun = 0;
+    unsigned int ff = 0; 
+    unsigned int fRun = 0;
+    unsigned int lf = 0; 
+    unsigned int lRun = 0;
+    
+    unsigned int rTime = 0;
+    unsigned int fTime = 0;
+    unsigned int lTime = 0;
+    
+    TRISCbits.TRISC0 = 1;
+    TRISCbits.TRISC1 = 1;
+    TRISCbits.TRISC2 = 1;
     
     if (rCount != 0) { startBottomCounter('R'); rRun = 1; }
-    else if (fCount != 0) { startBottomCounter('F'); fRun = 1; }
-    else if (lCount != 0) { startBottomCounter('L'); lRun = 1; }
+    if (fCount != 0) { startBottomCounter('F'); fRun = 1; }
+    if (lCount != 0) { startBottomCounter('L'); lRun = 1; }
     
-    while (rCount!=0 && fCount!=0 && lCount!=0){
-        if (rPin == 1 && rf == 0) rf = 1;
-        else if (rPin == 0 && rf == 1) { rCount--; rf=0; }
+    while (rRun == 1 || fRun == 1 || lRun == 1){
         
-        if (fPin == 1 && ff == 0) ff = 1;
-        else if (fPin == 0 && ff == 1) { fCount--; ff=0; }
-        
-        if (lPin == 1 && lf == 0) lf = 1;
-        else if (lPin == 0 && lf == 1) { lCount--; lf=0; }
-        
-        if (rCount == 0 && rRun == 1) { stopBottomCounter('R'); rRun = 0; }
-        if (fCount == 0 && fRun == 1) { stopBottomCounter('F'); fRun = 0; }
-        if (lCount == 0 && lRun == 1) { stopBottomCounter('L'); lRun = 0; }
+        if (readTimer() - rTime > 8 && PORTCbits.RC0 == 0 && rf == 0) rf = 1;
+        else if (readTimer() - rTime > 8 && PORTCbits.RC0 == 1 && rf == 1) { rCount--; rf=0; rTime = readTimer();}
+
+        if (readTimer() - fTime > 8 && PORTCbits.RC1 == 0 && ff == 0) ff = 1;
+        else if (readTimer() - fTime > 8 && PORTCbits.RC1 == 1 && ff == 1) { fCount--; ff=0; fTime = readTimer();}
+
+        if (readTimer() - lTime > 8 && PORTCbits.RC2 == 0 && lf == 0) lf = 1;
+        else if (readTimer() - lTime > 8 && PORTCbits.RC1 == 1 && lf == 1) { lCount--; lf=0; lTime = readTimer(); }
+
+        if (rCount <= 0 && rRun == 1) { stopBottomCounter('R'); rRun = 0; }
+        if (fCount <= 0 && fRun == 1) { stopBottomCounter('F'); fRun = 0; }
+        if (lCount <= 0 && lRun == 1) { stopBottomCounter('L'); lRun = 0; }
     }
 }
 

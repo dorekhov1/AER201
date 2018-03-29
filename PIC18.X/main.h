@@ -21,6 +21,7 @@
 #include "eep.h"
 #include "arduino.h"
 #include "UART_PIC.h"
+#include "timer.h"
 
 typedef struct {
     int destination;
