@@ -32,12 +32,20 @@ int getLogsMode(void) {
 }
 
 void showOperationsComplete(void) {
+    __lcd_clear();
+    printf("Press C to ");
+    __lcd_newline();
+    printf("continue ");
+    while(currentLogsMode == MODE_OPERATIONS_COMPLETE);
+}
+
+void showSaveOperations(void) {
     setArduinoToLogs('O');
     __lcd_clear();
     printf("Do you want to ");
     __lcd_newline();
     printf("log operations? ");
-    while(currentLogsMode == MODE_OPERATIONS_COMPLETE);
+    while(currentLogsMode == MODE_SAVE_OPERATIONS);
 }
 
 void showLogsPrompt(void) {
@@ -66,7 +74,15 @@ void showLoggingComplete(void) {
     while(currentLogsMode == MODE_LOGGING_COMPLETE);
 }
 
-void showViewLogs(void) {
+void showViewLogs(void)  {
+    __lcd_clear();
+    printf("Press C to ");
+    __lcd_newline();
+    printf("continue ");
+    while(currentLogsMode == MODE_VIEW_LOGS);
+}
+
+void showTransferLogs(void) {
     setArduinoToLogs('V');
     __lcd_clear();
     printf("Please connect ");
@@ -100,12 +116,16 @@ unsigned int enoughSpace(void) {
 
 void processLogsInterrupt(char keypress) {
     if (currentLogsMode == MODE_OPERATIONS_COMPLETE) {
+        if (keypress == 11) currentLogsMode = MODE_SAVE_OPERATIONS;
+    }
+    else if (currentLogsMode == MODE_SAVE_OPERATIONS) {
         if (keypress == 7) currentLogsMode = MODE_RETURN;
-        else if (keypress == 14) currentLogsMode = MODE_VIEW_LOGS;
+        else if (keypress == 14) currentLogsMode = MODE_TRANSFER_LOGS;
         else if (keypress == 11) {
             if (enoughSpace()) currentLogsMode = MODE_LOGGING;
             else currentLogsMode = MODE_LOGS_PROMPT;
         }
+        else if (keypress == 12) currentLogsMode = MODE_VIEW_LOGS;
     }
     else if (currentLogsMode == MODE_LOGS_PROMPT) {
         if (keypress == 7) currentLogsMode = MODE_RETURN;
@@ -113,13 +133,13 @@ void processLogsInterrupt(char keypress) {
             cleanEEPROM();
             currentLogsMode = MODE_OPERATIONS_COMPLETE;
         }
-        else if (keypress == 14) currentLogsMode = MODE_VIEW_LOGS;
+        else if (keypress == 14) currentLogsMode = MODE_TRANSFER_LOGS;
     }
     else if (currentLogsMode == MODE_LOGGING_COMPLETE) {
         if (keypress == 7) currentLogsMode = MODE_RETURN;
-        else if (keypress == 14) currentLogsMode = MODE_VIEW_LOGS;
+        else if (keypress == 14) currentLogsMode = MODE_TRANSFER_LOGS;
     }
-    else if (currentLogsMode == MODE_VIEW_LOGS) {   
+    else if (currentLogsMode == MODE_TRANSFER_LOGS) {   
         if (keypress == 7) currentLogsMode = MODE_RETURN;
         else if (keypress == 11) currentLogsMode = MODE_TRANSFERRING_LOGS;
     }

@@ -6,6 +6,15 @@
 #include <xc.h>
 #include "configBits.h"
 #include "I2C.h"
+#include "main.h"
+
+char buffer[100];
+int b_count = 0;
+
+void prepareBuffer(char c) {
+    buffer[b_count] = c;
+    b_count++;
+}
 
 void sendByteToArduino(unsigned char byte) {
     I2C_Master_Start(); // Start condition
@@ -18,6 +27,8 @@ void setArduinoToStandby (void) {
     sendByteToArduino('M');
     sendByteToArduino('S');
     sendByteToArduino('C');
+    sendByteToArduino('C');
+    sendByteToArduino('C');
 }
 
 void setArduinoToLogs (unsigned char byte) {
@@ -25,19 +36,38 @@ void setArduinoToLogs (unsigned char byte) {
     sendByteToArduino('L');
     sendByteToArduino(byte);
     sendByteToArduino('C');
+    sendByteToArduino('C');
+    sendByteToArduino('C');
 }
 
-void setArduinoToDisplayLogs () {
+void setArduinoToDisplayLogs(unsigned char* startTime, int operationNum, int rCount, int fCount, int lCount, unsigned char* endTime) {
     sendByteToArduino('M');
     sendByteToArduino('D');
-    
+    sendByteToArduino(operationNum);
+    for(unsigned int i = 0; i < 7; i++){
+        sendByteToArduino(startTime[i]);
+    }
+    for(unsigned int i = 0; i < b_count; i++){
+        sendByteToArduino(buffer[i]);
+    }
+    sendByteToArduino(rCount);
+    sendByteToArduino(fCount);
+    sendByteToArduino(lCount);
+    for(unsigned int i = 0; i < 7; i++){
+        sendByteToArduino(endTime[i]);
+    }
     sendByteToArduino('C');
+    sendByteToArduino('C');
+    sendByteToArduino('C');
+    b_count = 0;
 }
 
 void setArduinoToInput(unsigned char byte) {
     sendByteToArduino('M');
     sendByteToArduino('I');
     sendByteToArduino(byte);
+    sendByteToArduino('C');
+    sendByteToArduino('C');
     sendByteToArduino('C');
 }
 
@@ -46,6 +76,8 @@ void setArduinoToInputNum(unsigned int num) {
     sendByteToArduino('I');
     sendByteToArduino('Q');
     sendByteToArduino(num);
+    sendByteToArduino('C');
+    sendByteToArduino('C');
     sendByteToArduino('C');
 }
 
@@ -56,6 +88,8 @@ void setArduinoToRunCounter(unsigned char counter, int state) {
     sendByteToArduino(counter);
     sendByteToArduino(state);
     sendByteToArduino('C');
+    sendByteToArduino('C');
+    sendByteToArduino('C');
 }
 
 void setArduinoToRunArm(char arm) {
@@ -64,6 +98,8 @@ void setArduinoToRunArm(char arm) {
     sendByteToArduino('A');
     sendByteToArduino(arm);
     sendByteToArduino('C');
+    sendByteToArduino('C');
+    sendByteToArduino('C');
 }
 
 void setArduinoToRunMoving(int pos) {
@@ -71,6 +107,8 @@ void setArduinoToRunMoving(int pos) {
     sendByteToArduino('R');
     sendByteToArduino('M');
     sendByteToArduino(pos);
+    sendByteToArduino('C');
+    sendByteToArduino('C');
     sendByteToArduino('C');
 }
 

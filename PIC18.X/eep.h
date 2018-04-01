@@ -6,7 +6,8 @@
 #include "main.h"
 #include "math.h"
 
-unsigned char recordedTime[7];
+unsigned char startTime[7];
+unsigned char endTime[7];
 
 void write_octet_eep( unsigned char address, unsigned char data )
 {
@@ -59,16 +60,36 @@ void logOperationNum(unsigned int operationNum) {
     addLines(1);
 }
 
-void logTime(void) {
+void logStartTime(void) {
     unsigned int currentLine = getCurrentAddress();
     for (int i=0; i<7; i++) {
-        write_octet_eep(currentLine+i, recordedTime[i]);
+        write_octet_eep(currentLine+i, startTime[i]);
     }
     addLines(7);    
 }
 
-void recordTime(void) {
-    readTime(recordedTime);
+void logEndTime(void) {
+    unsigned int currentLine = getCurrentAddress();
+    for (int i=0; i<7; i++) {
+        write_octet_eep(currentLine+i, endTime[i]);
+    }
+    addLines(7);    
+}
+
+unsigned char* recordStartTime(void) {
+    readTime(startTime);
+}
+
+unsigned char* getStartTime(void) {
+    return startTime;
+}
+
+unsigned char* recordEndTime(void) {
+    readTime(endTime);
+}
+
+unsigned char* getEndTime(void) {
+    return endTime;
 }
 
 void logTapedDrawers(unsigned int* tapedDrawers, unsigned int tapedDrawersNum) {

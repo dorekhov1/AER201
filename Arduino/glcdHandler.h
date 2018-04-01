@@ -7,11 +7,9 @@
 #include <Adafruit_ST7735.h> // Hardware-specific library
 #include <SPI.h>
 
-#define TFT_CS     2
-#define TFT_RST    -1
-#define TFT_DC     3
+Adafruit_ST7735 tft = Adafruit_ST7735(2, 3, -1);
 
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
+static const char *DIETS[] = {"R", "F", "L", "RF", "RL", "FL", "RRF", "RRL", "RFF", "RLL", "RFL", "FFL", "FLL", "RRFL", "RFFL", "RFLL", "RLLL", "FLLL"};
 
 void initGlcd(void) {
   tft.initR(INITR_144GREENTAB);    
@@ -66,7 +64,7 @@ void displayDietInput(void) {
     drawLegend();
 }
 
-void displayDietNumInput(int num) {
+void displayDietNumInput(uint8_t num) {
     clearScreen();
     tft.setCursor(5, 15);
     char s[100];
@@ -91,7 +89,7 @@ void displayShowInput(void) {
 void displayOperationsComplete(void) {
     clearScreen();
     tft.setCursor(5, 15);
-    tft.print(F("Press C to log \n operations.\n\n Press # to view logs\n\n Press B to go to\n standby."));
+    tft.print(F("Press C to log \n operations.\n\n Press * to view logs\n\n Press # to transfer  logs\n\n Press B to go to\n standby."));
 }
 
 void displayLogsPrompt(void) {  
@@ -124,26 +122,46 @@ void displayTransferringLogs(void) {
     tft.print(F("Transferring logs \n is in progress! \n\n Do not detach the \n USB or turn off \n the machine or PC."));
 }
 
-void displayRunmodePrompt(int top, int r, int f, int l, int cartPos, int cartMoving, int arm1, int arm2, int arm3, int arm4, int opening) {
-    clearScreen();
+void displayRunmodePrompt(uint8_t top, uint8_t r, uint8_t f, uint8_t l, uint8_t cartPos, uint8_t cartMoving, uint8_t armRun) {
+    tft.fillRect(0, 0, tft.width(), tft.height(), ST7735_WHITE);
+    
     tft.setCursor(5, 15);
-    char s[100] = "Counters running:\n";
+    char s[200] = "Counters running:\n";
 
     if (top) sprintf(s, "%s %s", s, "Top");
     if (r) sprintf(s, "%s %s", s, "R");
     if (f) sprintf(s, "%s %s", s, "F");
     if (l) sprintf(s, "%s %s", s, "L");
+    if (!top && !r && !f && !l) printf(s, "%s %s", s, "None");
 
     if (cartMoving) sprintf(s, "%s\n\n Cart moving \n to position: %d", s, cartPos);
     else sprintf(s, "%s\n\n Cart position: %d", s, cartPos);
 
-    if (opening) sprintf(s, "%s\n\n Opening drawers", s);
-    else if (arm1) sprintf(s, "%s\n\n Closing drawer: \n row 1", s);
-    else if (arm2) sprintf(s, "%s\n\n Closing drawer: \n row 2", s);
-    else if (arm3) sprintf(s, "%s\n\n Closing drawer: \n row 3", s);
-    else if (arm4) sprintf(s, "%s\n\n Closing drawer: \n row 4", s);
+    if (armRun == 0) sprintf(s, "%s\n\n Opening drawers", s);
+    else if (armRun != -1) sprintf(s, "%s\n\n Closing drawer: \n row %d", s, armRun);
     
     tft.print(s);
+}
+
+void displayOperationInfo(char *buffer) {
+  clearScreen();
+  int operationNum = buffer[2];
+  char s[200]="Start time:";
+  sprintf(s, "%s\n %02x/%02x/%02x   %02x:%02x:%02x \n Operations:",s, buffer[9],buffer[8],buffer[7],buffer[5],buffer[4],buffer[3]);
+  for (uint8_t i=0; i<operationNum; i++) {
+    uint8_t dest = buffer[10+3*i];
+    boolean taped = 0;
+    if (dest > 100) {
+      taped = 1;
+      dest -= 100;
+    }
+    sprintf(s, "%s\n   %sx%d into %d", s, DIETS[buffer[11+3*i]-1], buffer[12+3*i],dest);
+    if (taped) sprintf(s, "%s taped", s);
+  }
+  sprintf(s, "%s\n R:%d F:%d L:%d",s, buffer[13+(operationNum-1)*3], buffer[14+(operationNum-1)*3], buffer[15+(operationNum-1)*3]); 
+  sprintf(s, "%s\n End time:\n %02x/%02x/%02x   %02x:%02x:%02x",s, buffer[22+(operationNum-1)*3],buffer[21+(operationNum-1)*3],buffer[20+(operationNum-1)*3],buffer[18+(operationNum-1)*3],buffer[17+(operationNum-1)*3],buffer[16+(operationNum-1)*3]);
+  tft.setCursor(5, 15);
+  tft.print(s);
 }
 
 #endif	/* INPUTHANDLER_H */

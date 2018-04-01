@@ -4,21 +4,21 @@
 #include <Servo.h>
 
 /* PIN ASSIGNMENTS */
-const int backArmPin = 4;
-const int firstArmPin = 10; //topmost
-const int secondArmPin = 6;
-const int thirdArmPin = 7; 
-const int fourthArmPin = 8; //bottommost
+const uint8_t backArmPin = 4;
+const uint8_t firstArmPin = 10; //topmost
+const uint8_t secondArmPin = 6;
+const uint8_t thirdArmPin = 7; 
+const uint8_t fourthArmPin = 8; //bottommost
 
-const int rCounter = 15;
-const int fCounter = 17;
-const int lCounter = 16; 
-const int topCounters = 14; 
-const int pwmCounters = 5;
+const uint8_t rCounter = 15;
+const uint8_t fCounter = 17;
+const uint8_t lCounter = 16; 
+const uint8_t topCounters = 14; 
+const uint8_t pwmCounters = 5;
 
-const int stepperPin = 0;
-const int stepperDirectionPin = 1;
-const int stepperSleepPin = 9;
+const uint8_t stepperPin = 0;
+const uint8_t stepperDirectionPin = 1;
+const uint8_t stepperSleepPin = 9;
 
 Servo backArm;
 Servo firstArm; //topmost
@@ -26,28 +26,28 @@ Servo secondArm;
 Servo thirdArm;
 Servo fourthArm; //bottommost2
 
-int backArmLimit = 70;
-int armLimit = 130;
-int armDelay = 25;
+const uint8_t backArmLimit = 70;
+const uint8_t armLimit = 130;
+const uint8_t armDelay = 25;
 
-int topRun = 0;
-int rRun = 0;
-int fRun = 0;
-int lRun = 0;
+boolean topRun = 0;
+boolean rRun = 0;
+boolean fRun = 0;
+boolean lRun = 0;
 
-const int dcBase = 50;
-const int dcStep = 10;
+const uint8_t dcBase = 50;
+const uint8_t dcStep = 10;
 
-int currentPos = 0;
-int positions[] = {0, 52, 110, 167};
+uint8_t currentPos = 0;
+uint8_t positions[] = {0, 52, 110, 167};
 
-int stepperDelayHigh = 1;
-int stepperDelayLow = 30;
+const uint8_t stepperDelayHigh = 1;
+const uint8_t stepperDelayLow = 30;
 
-int servoBools[] = {0,0,0,0,0,0}; //[0, 1, 2, 3, A, B]
+uint8_t servoBools[] = {0,0,0,0,0,0}; //[0, 1, 2, 3, A, B]
 
-int needsToMove = 0;
-int posToMove = -1;
+boolean needsToMove = 0;
+uint8_t posToMove = -1;
 
 void initActuators(void) {
     backArm.attach(backArmPin);
@@ -78,10 +78,16 @@ void initActuators(void) {
 }
 
 void updateGlcd(void) {
-  int cartPos = currentPos+1;
+  uint8_t cartPos = currentPos+1;
   if (needsToMove) cartPos = posToMove+1;
-  
-  displayRunmodePrompt(topRun, rRun, fRun, lRun, cartPos, needsToMove, servoBools[0], servoBools[1], servoBools[2], servoBools[3], servoBools[5]);
+  int armRun = -1;
+  for (uint8_t i=0; i<6; i++) {
+    if (servoBools[i]) {
+      armRun = i;
+      break;
+    }
+  }
+  displayRunmodePrompt(topRun, rRun, fRun, lRun, cartPos, needsToMove, armRun);
 }
 
 void processCounter(char counter, int onoff) {
@@ -106,14 +112,14 @@ void processCounter(char counter, int onoff) {
 }
 
 void runArms(){
-  for (int pos = armLimit; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+  for (uint8_t pos = armLimit; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
     firstArm.write(armLimit-pos);              // tell servo to go to position in variable 'pos'
     secondArm.write(pos);
     thirdArm.write(pos);
     fourthArm.write(pos);
     delay(15);                       // waits 15ms for the servo to reach the position
   }
-   for (int pos = 0; pos <= armLimit; pos += 1) { // goes from 0 degrees to 180 degrees
+   for (uint8_t pos = 0; pos <= armLimit; pos += 1) { // goes from 0 degrees to 180 degrees
     firstArm.write(armLimit-pos);              // tell servo to go to position in variable 'pos'
     secondArm.write(pos);
     thirdArm.write(pos);
@@ -122,14 +128,13 @@ void runArms(){
   }
 }
 
-
 void runArm(Servo arm, int isFlipped){
-  for (int pos = 0; pos <= armLimit; pos += 1) { // goes from 0 degrees to 180 degrees
+  for (uint8_t pos = 0; pos <= armLimit; pos += 1) { // goes from 0 degrees to 180 degrees
     if (isFlipped) arm.write(armLimit-pos);
     else arm.write(pos);              // tell servo to go to position in variable 'pos'
     delay(10);                       // waits 15ms for the servo to reach the position
   }
-  for (int pos = armLimit; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+  for (uint8_t pos = armLimit; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
     if (isFlipped) arm.write(armLimit-pos);
     else arm.write(pos);                 // tell servo to go to position in variable 'pos'
     delay(10);                       // waits 15ms for the servo to reach the position
@@ -137,11 +142,11 @@ void runArm(Servo arm, int isFlipped){
 }
 
 void runBackArm() {
-  for (int pos = 0; pos <= backArmLimit; pos += 1) { // goes from 0 degrees to 180 degrees
+  for (uint8_t pos = 0; pos <= backArmLimit; pos += 1) { // goes from 0 degrees to 180 degrees
     backArm.write(backArmLimit-pos);
     delay(10);                       // waits 15ms for the servo to reach the position
   }
-  for (int pos = backArmLimit; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+  for (uint8_t pos = backArmLimit; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
     backArm.write(backArmLimit-pos);                // tell servo to go to position in variable 'pos'
     delay(10);                       // waits 15ms for the servo to reach the position
   }
@@ -172,7 +177,7 @@ void checkServos(void) {
   }
 }
 
-void processMoving(int pos) {
+void processMoving(uint8_t pos) {
   needsToMove = 1;
   posToMove = pos;
   updateGlcd();
@@ -186,7 +191,7 @@ void checkMoving(void) {
     if (posToGo > currentPos) digitalWrite(stepperDirectionPin,HIGH);
     else if (posToGo < currentPos) digitalWrite(stepperDirectionPin,LOW);
     
-    for(int x = 0; x < abs(posToGo-currentPos); x++) {
+    for(uint8_t x = 0; x < abs(posToGo-currentPos); x++) {
       digitalWrite(stepperPin,HIGH); 
       delay(stepperDelayHigh); 
       digitalWrite(stepperPin,LOW); 

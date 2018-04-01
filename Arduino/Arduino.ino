@@ -3,28 +3,39 @@
 #include "glcdHandler.h"
 #include "actuatorsHandler.h"
 
+volatile boolean runMode = 0;
+
 void setup(){
+
+//  Serial.begin(9600);
+  
   Wire.begin(8); // Join I2C bus with address 8
   Wire.onReceive(receiveEvent); // Register a function to be called when this slave device receives a transmission from a master
-  Wire.onRequest(requestEvent); // Register a function to be called when a master requests data from this slave device
 
   initGlcd();
   initActuators();
-    Serial.begin(9600);
 }
 
 void loop(){
-  checkServos();
-  checkMoving();
+  if (runMode) {
+    checkMoving();
+    checkServos();
+  }
 }
 
-char buffer[9];
+char buffer[200];
 uint8_t b_count = 0;
+uint8_t c_count = 0;
 
 void receiveEvent(void){
   char b = Wire.read();
+  if (b == 'C') c_count++;
+  else c_count = 0;
 
-  if (b == 'C') processBuffer();
+  if (c_count == 3) {
+    processBuffer();
+    c_count = 0;
+  }
   else {
     buffer[b_count] = b;
     b_count++;
@@ -45,10 +56,14 @@ void processTime(void) {
 }
 
 void processMode(void) {
+    if (buffer[1] ==  'R') runMode = 1;
+    else runMode = 0;
+    
     if (buffer[1] == 'S') processStandby();
     else if (buffer[1] == 'I') processInput();
     else if (buffer[1] ==  'R') processRun();
     else if (buffer[1] == 'L') processLogs();
+    else if (buffer[1] == 'D') displayOperationInfo(buffer);
 }
 
 void processInput(void) {
@@ -75,32 +90,3 @@ void processRun(void) {
   else if (buffer[2] == 'M') processMoving(buffer[3]);
 }
 
-void requestEvent(void){
-   /* This function is called whenver a master requests data.
-   * 
-   * Arguments: none
-   * 
-   * Returns: none
-   */
-   
-  //Wire.write(incomingByte); // Respond with message of 1 byte
-  //incomingByte = 0; // Clear output buffer
-}
-
-
-void serialEvent() {
-  while (Serial.available()) {
-    char inChar = (char)Serial.read();
-  
-    if (inChar == '1') runArm(firstArm, 1);
-    else if (inChar == '2') runArm(secondArm, 0);
-    else if (inChar == '3') runArm(thirdArm, 0);
-    else if (inChar == '4') runArm(fourthArm, 0);
-    else if (inChar == 'A') runArms();
-    else if (inChar == 'B') runBackArm();
-    else if (inChar == 'O') processMoving(0);
-    else if (inChar == 'T') processMoving(1);
-    else if (inChar == 'H') processMoving(2);
-    else if (inChar == 'F') processMoving(3);
-  }
-}

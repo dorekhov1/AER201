@@ -32,10 +32,12 @@ enum inputMode {
 
 enum logsMode {
     MODE_OPERATIONS_COMPLETE, //do you want to log operations or view logs?
+    MODE_SAVE_OPERATIONS,
     MODE_LOGS_PROMPT, //not enough memory, do you want to clean EEPROM?
     MODE_LOGGING, //logs are being saved... 
     MODE_LOGGING_COMPLETE, //logs are saved! Do you want to view them?
     MODE_VIEW_LOGS, //attach to PC, press ? to begin transfer
+    MODE_TRANSFER_LOGS,
     MODE_TRANSFERRING_LOGS, //transferring logs... on complete go to standby
     MODE_RETURN
 };
@@ -62,8 +64,8 @@ enum diet {
 };
 
 static const char *DIETS[] = {
-    "R", "F", "L", "RF", "RL", "FL", "RRF", "RRL", "RFF", "RLL", "RFL", "FFL",
-    "FLL", "RRFL", "RFFL", "RFLL", "RLLL", "FLLL"
+    "R\0\0\0", "F\0\0\0", "L\0\0\0", "RF\0\0", "RL\0\0", "FL\0\0", "RRF\0", "RRL\0", "RFF\0", "RLL\0", "RFL\0", "FFL\0",
+    "FLL\0", "RRFL", "RFFL", "RFLL", "RLLL", "FLLL"
 };
 
 #endif	/* ENUMS_H */

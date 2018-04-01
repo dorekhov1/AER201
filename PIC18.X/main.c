@@ -37,6 +37,8 @@ unsigned int rTime = 0;
 unsigned int fTime = 0;
 unsigned int lTime = 0;
 
+int topRun = 0;
+
 void main(void) {
     
     // <editor-fold defaultstate="collapsed" desc="Machine Configuration">
@@ -135,6 +137,8 @@ void main(void) {
         
         if (currentMachineMode == MODE_RUNNING) {
             __lcd_display_control(1, 0, 0)
+            recordStartTime();
+            
             INT0IE = 1; // Enable RB0 (keypad data available) interrupt
             INT1IE = 1; // Enable RB1 (keypad data available) interrupt
             INT2IE = 1; // Enable RB2 (keypad data available) interrupt
@@ -142,6 +146,7 @@ void main(void) {
             INTCON2bits.INTEDG0 = 1;  // rising edge
             INTCON2bits.INTEDG1 = 1;  // rising edge
             INTCON2bits.INTEDG2 = 1;  // rising edge
+            
             
             __delay_ms(100);
             
@@ -153,7 +158,8 @@ void main(void) {
             secondsWithoutF = 0;
             secondsWithoutL = 0;
             
-            startTopCounters();
+//            startTopCounters();
+//            topRun = 1;            
             
 //            int tapeValues[16];
 //            readTapes(tapeValues);
@@ -161,66 +167,74 @@ void main(void) {
 //            operationNum = discardOperations(tapedDrawers, tapedDrawersNum);
             
             optimizeOperationOrder(getOperationNum());
+//            
+//            int operationsExecuted = 0;
+//            int currentColumn = 0;
+//            while (operationsExecuted != operationNum) {
+//                if (currentColumn != 0) {
+//                    __lcd_clear();
+//                    printf("Moving to ");
+//                    __lcd_newline();
+//                    printf("column %d", currentColumn+1);
+//                    moveToColumn(currentColumn);
+//                }
+//                Operation o = operations[operationsExecuted];
+//                if (columnNeedsFood(currentColumn, operationsExecuted)) {
+//                    __lcd_clear();
+//                    printf("Opening drawers");
+//                    __lcd_newline();
+//                    printf("column %d", currentColumn+1);
+//                    openAllDrawers();
+//                    int currentRow = 0;
+//                    while (currentRow < 4) {
+//                        if (rowNeedsFood(currentRow, operationsExecuted)) {
+//                            if (!drawerIsTaped(currentRow)) {
+//                                __lcd_clear();
+//                                printf("Dispensing:");
+//                                __lcd_newline();
+//                                printf("%sx%d into %d", DIETS[o.dietType-1], o.dietNum, o.destination);
+//                                determineFoodCount(DIETS[o.dietType-1], o.dietNum);
+//                                countFood();
+//                            }
+//                            else {
+//                                operations[operationsExecuted].destination += 100;
+//                            }
+//                            operationsExecuted = operationsExecuted + 1;
+//                            __delay_ms(1000);
+//                        }
+//                        __lcd_clear();
+//                        printf("Closing drawer");
+//                        __lcd_newline();
+//                        printf("row %d", currentRow+1);
+//                        closeDrawer(currentRow);
+//                        currentRow = currentRow+1;
+//                    }
+//                }
+//                currentColumn = currentColumn + 1;
+//            }
+//            moveToColumn(0);
+//            
+//            while (secondsWithoutR < 10 || secondsWithoutF < 10 || secondsWithoutL < 10);
+//            
+//            LATCbits.LATC5 = 0; //enable keypad
+//            stopTopCounters();
+//            
+//            INT0IE = 0;
+//            INT1IE = 1;
+//            INT2IE = 0;
             
-            int operationsExecuted = 0;
-            int currentColumn = 0;
-            while (operationsExecuted != operationNum) {
-                if (currentColumn != 0) {
-                    __lcd_clear();
-                    printf("Moving to ");
-                    __lcd_newline();
-                    printf("column %d", currentColumn+1);
-                    moveToColumn(currentColumn);
-                }
-                Operation o = operations[operationsExecuted];
-                if (columnNeedsFood(currentColumn, operationsExecuted)) {
-                    __lcd_clear();
-                    printf("Opening drawers");
-                    __lcd_newline();
-                    printf("column %d", currentColumn+1);
-                    openAllDrawers();
-                    int currentRow = 0;
-                    while (currentRow < 4) {
-                        if (rowNeedsFood(currentRow, operationsExecuted)) {
-                            if (!drawerIsTaped(currentRow)) {
-                            __lcd_clear();
-                            printf("Dispensing:");
-                            __lcd_newline();
-                            printf("%sx%d into %d", DIETS[o.dietType-1], o.dietNum, o.destination);
-                                determineFoodCount(DIETS[o.dietType-1], o.dietNum);
-                                countFood();
-                            }
-                            operationsExecuted = operationsExecuted + 1;
-                            __delay_ms(1000);
-                        }
-                        __lcd_clear();
-                        printf("Closing drawer");
-                        __lcd_newline();
-                        printf("row %d", currentRow+1);
-                        closeDrawer(currentRow);
-                        currentRow = currentRow+1;
-                    }
-                }
-                currentColumn = currentColumn + 1;
+            __delay_ms(3000);
+            
+            recordEndTime();
+            
+            for (unsigned int i=0; i<operationNum; i++) {
+                prepareBuffer(operations[i].destination);
+                prepareBuffer(operations[i].dietType);
+                prepareBuffer(operations[i].dietNum);
             }
-            moveToColumn(0);
             
-            while (secondsWithoutR < 10 || secondsWithoutF < 10 || secondsWithoutL < 10);
+            setArduinoToDisplayLogs(getStartTime(), operationNum, rTotalCount, fTotalCount, lTotalCount, getEndTime());
             
-            LATCbits.LATC5 = 0; //enable keypad
-            stopTopCounters();
-            
-            __lcd_clear();
-            printf("Total count: ");
-            __lcd_newline();
-            printf("R: %d F: %d L: %d", rTotalCount, fTotalCount, lTotalCount);
-            __delay_ms(5000);
-            
-            INT0IE = 0;
-            INT1IE = 1;
-            INT2IE = 0;
-            
-            recordTime();
             LATCbits.LATC5 = 0; //enable keypad
             currentMachineMode = MODE_LOGS;
             setLogsMode(MODE_OPERATIONS_COMPLETE);
@@ -232,17 +246,19 @@ void main(void) {
         if (currentMachineMode == MODE_LOGS) {
             __lcd_display_control(1, 0, 0)
             if (getLogsMode() == MODE_OPERATIONS_COMPLETE) showOperationsComplete();
+            else if (getLogsMode() == MODE_SAVE_OPERATIONS) showSaveOperations();
             else if (getLogsMode() == MODE_LOGS_PROMPT) showLogsPrompt();
             else if (getLogsMode() == MODE_LOGGING) {
-                showLogging();
+                showLogging(); 
                 logCreatedOperations(getOperationNum());
                 logTapedDrawers(tapedDrawers, tapedDrawersNum);
                 logCounts(rTotalCount, fTotalCount, lTotalCount);
-                logTime();
+                logEndTime();
                 completeLogs();
             }
             else if (getLogsMode() == MODE_LOGGING_COMPLETE) showLoggingComplete();
             else if (getLogsMode() == MODE_VIEW_LOGS) showViewLogs();
+            else if (getLogsMode() == MODE_TRANSFER_LOGS) showTransferLogs();
             else if (getLogsMode() == MODE_TRANSFERRING_LOGS) {
                 showTransferringLogs();
                 sendLogsToPC();
@@ -341,7 +357,7 @@ int rowNeedsFood(int row, int operationsExecuted) {
 
 void logCreatedOperations(int operationNum){
     logOperationNum(operationNum);
-    logTime();
+    logStartTime();
     
     for (int i=0; i<operationNum; i++) {
         Operation o = operations[i];        
@@ -380,32 +396,31 @@ void interrupt interruptHandler(void){
         INT1IF = 0;
     }
     if (LATCbits.LATC5 == 1) {
-        
         if (INT0IF == 1) {   
+            INT0IF = 0;
             if(readTimer() - rTime > 8) {
                 rTime = readTimer();
                 rTotalCount++;
                 rPassedRecently = 1;
                 secondsWithoutR = 0;
-                INT0IF = 0;
             }
         }
         if (INT1IF == 1) {
+            INT1IF = 0;
             if (readTimer() - fTime > 8) {
                 fTime = readTimer();
                 fTotalCount++;
                 fPassedRecently = 1;
                 secondsWithoutF = 0;
-                INT1IF = 0;
             }
         }
         if (INT2IF == 1){
+            INT2IF = 0;
             if (readTimer() - lTime > 8) {
                 lTime = readTimer();
                 lTotalCount++;
                 lPassedRecently = 1;
                 secondsWithoutL = 0;
-                INT2IF = 0;
             }
         }
     }
@@ -415,7 +430,6 @@ void interrupt interruptHandler(void){
         TMR0IF = 0;
         increaseTimeCount();
         if (readTimer() % 10 == 0) {
-            printTimeToGLCD();
             if (currentMachineMode == MODE_RUNNING) {
                 if (!rPassedRecently) secondsWithoutR++;
                 if (!fPassedRecently) secondsWithoutF++;
@@ -424,7 +438,13 @@ void interrupt interruptHandler(void){
                 rPassedRecently = 0;
                 fPassedRecently = 0;
                 lPassedRecently = 0;
+                
+                if (topRun && secondsWithoutR > 10 && secondsWithoutF > 10 && secondsWithoutL > 10) {
+                    stopTopCounters();
+                    topRun = 0;
+                }
             }
+            else printTimeToGLCD();
         }
     } 
 }

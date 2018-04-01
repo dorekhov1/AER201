@@ -42,6 +42,8 @@ void printTimeToGLCD() {
         sendByteToArduino(time[i]);
     }
     sendByteToArduino('C');
+    sendByteToArduino('C');
+    sendByteToArduino('C');
 }
 
 #endif	/* RTC_H */
