@@ -68,6 +68,6 @@
 
 #include <xc.h>
 
-#define _XTAL_FREQ 40000000    // Define osc freq for use in delay macros 
+#define _XTAL_FREQ 8000000    // Define osc freq for use in delay macros 
 
 #endif /* CONFIG_BITS_H */

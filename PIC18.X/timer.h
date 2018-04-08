@@ -10,14 +10,19 @@
 
 #include <xc.h>
 
-unsigned int time = 0;
+volatile unsigned int timer = 0;
 
 void increaseTimeCount(void) {
-    time++;
+    timer++;
 }
 
+void setTime(unsigned int t) {
+    timer = t;
+}
+
+
 unsigned int readTimer(void) {
-    return time;
+    return timer;
 }
 
 

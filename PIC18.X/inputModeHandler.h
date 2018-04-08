@@ -16,6 +16,7 @@
 #include "lcd.h"
 #include "enums.h"
 #include "rtc.h"
+#include "timer.h"
 
 /*********************************VARIABLES*********************************/
 
@@ -38,6 +39,10 @@ unsigned char message2[16];
 
 unsigned int drawersUsed[8]; //stores the drawers used to prevent user repeating drawers
 
+unsigned int allowInput = 0;
+
+unsigned int orderOptimize = 0;
+
 /***************************GETTERS AND SETTERS***************************/
 
 void setInputMode(unsigned int newMode) { currentInputMode = newMode; }
@@ -51,6 +56,7 @@ unsigned int getOperationNum(void) { return operationNum; }
 void setOperationNum(unsigned int num) { operationNum = num; }
 
 unsigned int getDisplayedOperationNum(void) { return displayedOperationNum; }
+void setDisplayedOperationNum(unsigned int num) { displayedOperationNum = num   ; }
 
 unsigned int needToDeleteOperation(void) { return operationDelete; }
 void setDeleteOperation(unsigned int n) { operationDelete = n; }
@@ -58,9 +64,14 @@ void setDeleteOperation(unsigned int n) { operationDelete = n; }
 unsigned int isOperationReady(void) { return operationReady; }
 void setOperationReady(unsigned int b) { operationReady = b; }
 
+
+unsigned int needsOptimize(void) { return orderOptimize; }
+void setOptimize(unsigned int o) { orderOptimize = 0; }
+
 /***************************FUNCTIONS***************************/
 
 void clear(void) {
+    allowInput = 0;
     __lcd_clear();
     __lcd_home();
     memset(input,0,strlen(input));
@@ -72,13 +83,20 @@ void printToLcd(int hasInput) {
     __lcd_newline();
     if (hasInput) printf(message2, input);
     else printf(message2);
+    allowInput = 1;
 }
 
 void displayAskForMessage(unsigned int mode, unsigned char * mes1) {
     strncpy(message1, mes1, sizeof(message1) - 1);
     strncpy(message2, "%s", sizeof(message2) - 1);
     printToLcd(1);
-    while (currentInputMode == mode);
+    unsigned int time = 0;
+    while (currentInputMode == mode) {
+        if (readTimer() - time >= 10)  {
+            time = readTimer();
+            printTimeToGLCD();
+        }
+    }
 }
 
 void askForOperationInput(void) {
@@ -89,7 +107,14 @@ void askForOperationInput(void) {
     strncpy(message2, "created: %s ", sizeof(message2) - 1);
     sprintf(input, "%d", operationNum);    
     printToLcd(1);
-    while (currentInputMode == MODE_EMPTY_INPUT);
+    
+    int time = 0;
+    while (currentInputMode == MODE_EMPTY_INPUT) {
+        if (readTimer() - time >= 10)  {
+            time = readTimer();
+            printTimeToGLCD();
+        }
+    }
     __lcd_display_control(1, 1, 0)
 }
 
@@ -121,7 +146,14 @@ void showPrompt(void) {
     strncpy(message2, "created: %s ", sizeof(message2) - 1);
     sprintf(input, "%d", operationNum);
     printToLcd(1);
-    while (currentInputMode == MODE_INPUT_PROMPT);
+    
+    unsigned int time = 0;
+    while (currentInputMode == MODE_INPUT_PROMPT) {
+        if (readTimer() - time >= 10)  {
+            time = readTimer();
+            printTimeToGLCD();
+        }
+    }
     __lcd_display_control(1, 1, 0);
 }
 
@@ -135,8 +167,15 @@ void showInput(int num, int diet, int dietN, int dest) {
     printf("Operation %d", num+1);
     __lcd_newline();
     printf("%sx%d into %d", diet, dietN, dest);
+    allowInput = 1;
     
-    while (opNum == displayedOperationNum && currentInputMode == MODE_SHOW_INPUT);
+    int time = 0;
+    while (opNum == displayedOperationNum && currentInputMode == MODE_SHOW_INPUT) {
+        if (readTimer() - time >= 10)  {
+            time = readTimer();
+            printTimeToGLCD();
+        }
+    }
     __lcd_display_control(1, 1, 0);
 }
 
@@ -258,41 +297,44 @@ void processNumberInput(char keypress) {
 }
 
 void processInputInterrupt(char keypress) {
-    if (currentInputMode == MODE_EMPTY_INPUT) {
-        if (keypress == 7) currentInputMode = MODE_NO_INPUT;
-        else if (keypress == 12) currentInputMode = MODE_INPUT_DESTINATION;
-    }
-    else if (currentInputMode == MODE_INPUT_DESTINATION 
-            || currentInputMode == MODE_INPUT_DIET 
-            || currentInputMode == MODE_INPUT_DIET_NUM) {
-        processNumberInput(keypress);
-    }
-    else if (currentInputMode == MODE_INPUT_PROMPT) {
-        if (keypress == 12) {
-            if (operationNum < 8) currentInputMode = MODE_INPUT_DESTINATION;
-            else displayMaxOperationsError();
+    if (allowInput) {
+        if (currentInputMode == MODE_EMPTY_INPUT) {
+            if (keypress == 7) currentInputMode = MODE_NO_INPUT;
+            else if (keypress == 12) currentInputMode = MODE_INPUT_DESTINATION;
         }
-        else if (keypress == 14) currentInputMode = MODE_SHOW_INPUT;
-        else if (keypress == 3) currentInputMode = MODE_INPUT_COMPLETE;
-    }
-    else if (currentInputMode == MODE_SHOW_INPUT) {
-        if (keypress == 11) 
-            if (operationNum - 1 == displayedOperationNum) {
+        else if (currentInputMode == MODE_INPUT_DESTINATION 
+                || currentInputMode == MODE_INPUT_DIET 
+                || currentInputMode == MODE_INPUT_DIET_NUM) {
+            processNumberInput(keypress);
+        }
+        else if (currentInputMode == MODE_INPUT_PROMPT) {
+            if (keypress == 12) {
+                if (operationNum < 8) currentInputMode = MODE_INPUT_DESTINATION;
+                else displayMaxOperationsError();
+            }
+            else if (keypress == 14) currentInputMode = MODE_SHOW_INPUT;
+            else if (keypress == 3) currentInputMode = MODE_INPUT_COMPLETE;
+            else if (keypress == 0) orderOptimize = 1;
+        }
+        else if (currentInputMode == MODE_SHOW_INPUT) {
+            if (keypress == 11) 
+                if (operationNum - 1 == displayedOperationNum) {
+                    displayedOperationNum = 0;
+                    currentInputMode = MODE_INPUT_PROMPT;
+                }
+                else displayedOperationNum++;
+            else if (keypress == 7) {
                 displayedOperationNum = 0;
                 currentInputMode = MODE_INPUT_PROMPT;
             }
-            else displayedOperationNum++;
-        else if (keypress == 7) {
-            displayedOperationNum = 0;
-            currentInputMode = MODE_INPUT_PROMPT;
-        }
-        else if (keypress == 15) {
-            operationDelete = 1;
-            if (operationNum != 1) currentInputMode = MODE_INPUT_PROMPT;
-            else currentInputMode = MODE_EMPTY_INPUT;            
-            for (unsigned int i = displayedOperationNum; i<operationNum; i++)
-                drawersUsed[i] = drawersUsed[i+1];
-            displayedOperationNum = 0;
+            else if (keypress == 15) {
+                operationDelete = 1;
+                if (operationNum != 1) currentInputMode = MODE_INPUT_PROMPT;
+                else currentInputMode = MODE_EMPTY_INPUT;            
+                for (unsigned int i = displayedOperationNum; i<operationNum; i++)
+                    drawersUsed[i] = drawersUsed[i+1];
+//                displayedOperationNum = 0;
+            }
         }
     }
 }

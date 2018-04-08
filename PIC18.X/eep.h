@@ -7,7 +7,6 @@
 #include "math.h"
 
 unsigned char startTime[7];
-unsigned char endTime[7];
 
 void write_octet_eep( unsigned char address, unsigned char data )
 {
@@ -60,22 +59,6 @@ void logOperationNum(unsigned int operationNum) {
     addLines(1);
 }
 
-void logStartTime(void) {
-    unsigned int currentLine = getCurrentAddress();
-    for (int i=0; i<7; i++) {
-        write_octet_eep(currentLine+i, startTime[i]);
-    }
-    addLines(7);    
-}
-
-void logEndTime(void) {
-    unsigned int currentLine = getCurrentAddress();
-    for (int i=0; i<7; i++) {
-        write_octet_eep(currentLine+i, endTime[i]);
-    }
-    addLines(7);    
-}
-
 unsigned char* recordStartTime(void) {
     readTime(startTime);
 }
@@ -84,26 +67,17 @@ unsigned char* getStartTime(void) {
     return startTime;
 }
 
-unsigned char* recordEndTime(void) {
-    readTime(endTime);
-}
-
-unsigned char* getEndTime(void) {
-    return endTime;
-}
-
-void logTapedDrawers(unsigned int* tapedDrawers, unsigned int tapedDrawersNum) {
-    unsigned int byte1 = 0;
-    unsigned int byte2 = 0;
-
-    for (int i=0; i<tapedDrawersNum; i++) {
-        if (tapedDrawers[i] <= 8) byte1 += pow(2, tapedDrawers[i]-1);
-        else byte2 += pow(2, tapedDrawers[i]-9);
+void logStartTime(void) {
+    unsigned int currentLine = getCurrentAddress();
+    for (int i=0; i<7; i++) {
+        write_octet_eep(currentLine+i, startTime[i]);
     }
-    
-    write_octet_eep(getCurrentAddress(), byte1);
-    write_octet_eep(getCurrentAddress()+1, byte2);
-    addLines(2);
+    addLines(7);    
+}
+
+void logRunTime(unsigned int runTime) {
+    write_octet_eep(getCurrentAddress(), runTime);
+    addLines(1);    
 }
 
 void logOperation(unsigned int destination, unsigned int dietType, unsigned int dietNum) {

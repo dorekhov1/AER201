@@ -1,14 +1,14 @@
 #include <Servo.h>
  
 /* PIN ASSIGNMENTS */
-const int stepPin = 10; 
-const int dirPin = 9; 
+//const int stepPin = 10; 
+//const int dirPin = 9; 
 
-const int backArmPin = 4;
-const int firstArmPin = 12; //topmost
-const int secondArmPin = 6;
-const int thirdArmPin = 7; 
-const int fourthArmPin = 8;
+const uint8_t backArmPin = 4;
+const uint8_t firstArmPin = 10; //topmost
+const uint8_t secondArmPin = 6;
+const uint8_t thirdArmPin = 7; 
+const uint8_t fourthArmPin = 8; //bottommost
 
 int backArmRunning = 0;
 
@@ -18,9 +18,9 @@ Servo thirdArm;
 Servo fourthArm;
 Servo backArm;
 
-int armLimit = 126;
+int armLimit = 143;
 
-int backArmUpperLimit = 70;
+int backArmUpperLimit = 95;
 int backArmLowerLimit = 0;
 
 int currentPos = 0;
@@ -39,11 +39,11 @@ void setup() {
     
     backArm.write(backArmUpperLimit);
 
-    pinMode(stepPin,OUTPUT); 
-    pinMode(dirPin,OUTPUT); 
-
-    digitalWrite(dirPin, LOW);
-    digitalWrite(stepPin, LOW);   
+//    pinMode(stepPin,OUTPUT); 
+//    pinMode(dirPin,OUTPUT); 
+//
+//    digitalWrite(dirPin, LOW);
+//    digitalWrite(stepPin, LOW);   
     
     firstArm.write(armLimit);
     secondArm.write(0);
@@ -96,20 +96,20 @@ void runArm(Servo arm, int isFlipped){
   }
 }
 
-void moveCart(int pos) {
-  int posToGo = positions[pos];
-
-  if (posToGo > currentPos) digitalWrite(dirPin,LOW); //Forward
-  else if (posToGo < currentPos) digitalWrite(dirPin,HIGH); //Backward
-  
-  for(int x = 0; x < abs(posToGo-currentPos); x++) {
-    digitalWrite(stepPin,HIGH); 
-    delayMicroseconds(stepperDelay); 
-    digitalWrite(stepPin,LOW); 
-    delayMicroseconds(stepperDelay); 
-  }
-  currentPos = posToGo;
-}
+//void moveCart(int pos) {
+//  int posToGo = positions[pos];
+//
+//  if (posToGo > currentPos) digitalWrite(dirPin,LOW); //Forward
+//  else if (posToGo < currentPos) digitalWrite(dirPin,HIGH); //Backward
+//  
+//  for(int x = 0; x < abs(posToGo-currentPos); x++) {
+//    digitalWrite(stepPin,HIGH); 
+//    delayMicroseconds(stepperDelay); 
+//    digitalWrite(stepPin,LOW); 
+//    delayMicroseconds(stepperDelay); 
+//  }
+//  currentPos = posToGo;
+//}
 
 void serialEvent() {
   
@@ -124,9 +124,9 @@ void serialEvent() {
     else if (inChar == 'F') runBackArm(1);
     else if (inChar == 'B') runBackArm(0);
     
-    else if (inChar == 'O') moveCart(0);
-    else if (inChar == 'T') moveCart(1);
-    else if (inChar == 'H') moveCart(2);
-    else if (inChar == 'U') moveCart(3);
+//    else if (inChar == 'O') moveCart(0);
+//    else if (inChar == 'T') moveCart(1);
+//    else if (inChar == 'H') moveCart(2);
+//    else if (inChar == 'U') moveCart(3);
   }
 }

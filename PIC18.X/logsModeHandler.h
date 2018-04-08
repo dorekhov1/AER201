@@ -11,11 +11,16 @@
 #include <xc.h>
 #include "main.h"
 #include "eep.h"
+#include "timer.h"
 
-int currentLogsMode = MODE_OPERATIONS_COMPLETE;
+volatile int currentLogsMode = MODE_OPERATIONS_COMPLETE;
 
 int logsSaved = 0;
 int fromStandby = 0;
+
+int linesDisplayed = 1;
+
+volatile int showNewLogs = 0;
 
 void setFromStandby(int b) {
     fromStandby = b;
@@ -31,12 +36,22 @@ int getLogsMode(void) {
     return currentLogsMode;
 }
 
+void wait(int mode) {
+    int time = 0;
+    while (currentLogsMode == mode) {
+        if (readTimer() - time >= 10)  {
+            time = readTimer();
+            printTimeToGLCD();
+        }
+    }
+}
+
 void showOperationsComplete(void) {
     __lcd_clear();
     printf("Press C to ");
     __lcd_newline();
     printf("continue ");
-    while(currentLogsMode == MODE_OPERATIONS_COMPLETE);
+    wait(MODE_OPERATIONS_COMPLETE);
 }
 
 void showSaveOperations(void) {
@@ -45,7 +60,7 @@ void showSaveOperations(void) {
     printf("Do you want to ");
     __lcd_newline();
     printf("log operations? ");
-    while(currentLogsMode == MODE_SAVE_OPERATIONS);
+    wait(MODE_SAVE_OPERATIONS);
 }
 
 void showLogsPrompt(void) {
@@ -54,7 +69,7 @@ void showLogsPrompt(void) {
     printf("Not enough ");
     __lcd_newline();
     printf("memory. ");
-    while(currentLogsMode == MODE_LOGS_PROMPT);
+    wait(MODE_LOGS_PROMPT);
 }
 
 void showLogging(void) {
@@ -71,15 +86,51 @@ void showLoggingComplete(void) {
     printf("Logging ");
     __lcd_newline();
     printf("is complete!");
-    while(currentLogsMode == MODE_LOGGING_COMPLETE);
+    wait(MODE_LOGGING_COMPLETE);
 }
 
 void showViewLogs(void)  {
+    setArduinoToLogs('Q');
     __lcd_clear();
-    printf("Press C to ");
+    printf("Select way ");
     __lcd_newline();
-    printf("continue ");
-    while(currentLogsMode == MODE_VIEW_LOGS);
+    printf("to view logs.");
+    wait(MODE_VIEW_LOGS);
+}
+
+void showViewLogsGLCD(void) {
+    
+    showNewLogs = 1;
+    
+    int time = 0;
+    
+    while(currentLogsMode == MODE_VIEW_LOGS_GLCD) {
+        if (showNewLogs) {           
+            __lcd_clear();
+            printf("Displaying ");
+            __lcd_newline();
+            printf("logs. ");
+            int logLength = 14 + 3 * (read_octet_eep(linesDisplayed) - 1);
+
+            for (unsigned int i = linesDisplayed; i<=linesDisplayed+logLength; i++) {
+                prepareBuffer(read_octet_eep(i));
+            }
+            setArduinoToDisplayLogsEEPROM();
+            __lcd_clear();
+            printf("Press C to ");
+            __lcd_newline();
+            printf("continue ");
+
+            linesDisplayed += logLength;
+            
+            showNewLogs = 0;
+        }
+        if (readTimer() - time >= 10)  {
+            time = readTimer();
+            printTimeToGLCD();
+        }
+    }
+    linesDisplayed = 0;
 }
 
 void showTransferLogs(void) {
@@ -88,7 +139,7 @@ void showTransferLogs(void) {
     printf("Please connect ");
     __lcd_newline();
     printf("to COM1 port. ");
-    while(currentLogsMode == MODE_VIEW_LOGS);
+    wait(MODE_TRANSFER_LOGS);
 }
 
 void showTransferringLogs(void) {
@@ -137,13 +188,25 @@ void processLogsInterrupt(char keypress) {
     }
     else if (currentLogsMode == MODE_LOGGING_COMPLETE) {
         if (keypress == 7) currentLogsMode = MODE_RETURN;
-        else if (keypress == 14) currentLogsMode = MODE_TRANSFER_LOGS;
+        else if (keypress == 14) currentLogsMode = MODE_VIEW_LOGS;
     }
     else if (currentLogsMode == MODE_TRANSFER_LOGS) {   
         if (keypress == 7) currentLogsMode = MODE_RETURN;
         else if (keypress == 11) currentLogsMode = MODE_TRANSFERRING_LOGS;
     }
+    else if (currentLogsMode == MODE_VIEW_LOGS) {   
+        if (keypress == 12) currentLogsMode = MODE_VIEW_LOGS_GLCD;
+        else if (keypress == 14) currentLogsMode = MODE_TRANSFER_LOGS;
+        else if (keypress == 7) currentLogsMode = MODE_RETURN;
+    }
+    else if (currentLogsMode == MODE_VIEW_LOGS_GLCD) {   
+        if (keypress == 11) {
+            if (linesDisplayed != getCurrentAddress()) showNewLogs = 1; 
+            else currentLogsMode = MODE_VIEW_LOGS;
+        }
+        else if (keypress == 7) currentLogsMode = MODE_VIEW_LOGS;
+    }
 }
 
-#endif	/* LOGSMODEHANDLE
+#endif	/* LOGSMODEHANDL
 R_H */

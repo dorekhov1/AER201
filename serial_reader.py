@@ -3,7 +3,7 @@ import time
 import sys
 
 def update_progress(progress):
-    barLength = 20 # Modify this to change the length of the progress bar
+    barLength = 20
     status = ""
     if isinstance(progress, int):
         progress = float(progress)
@@ -22,28 +22,13 @@ def update_progress(progress):
     sys.stdout.flush()
 
 
-def print_time(s, rtc):
-    print("Time of", s, ": ", format(rtc[6], '02x'), "/", format(rtc[5], '02x'), "/", format(rtc[4], '02x'), " ",
+def print_time(rtc):
+    print("Time of start: ", format(rtc[6], '02x'), "/", format(rtc[5], '02x'), "/", format(rtc[4], '02x'), " ",
           format(rtc[2], '02x'), ":", format(rtc[1], '02x'), ":", format(rtc[0], '02x'))
 
 
-def print_emergency(emergency):
-    if emergency == 1:
-        print("Operation was interrupted by emergency signal")
-
-
-def print_taped(byte1, byte2):
-    taped_bitmask = [bool(byte1 & (1 << n)) for n in range(8)] + [bool(byte2 & (1 << n)) for n in range(8)]
-
-    taped_drawers = []
-    for i in range(len(taped_bitmask)):
-        if taped_bitmask[i]:
-            taped_drawers.append(i)
-
-    if len(taped_drawers) == 0:
-        print("No drawers taped")
-    else:
-        print("Taped Drawers: " + ', '.join(taped_drawers))
+def print_runtime(time):
+    print("Run Duration: ", time, "s")
 
 
 def print_count(r, f, l):
@@ -55,22 +40,24 @@ def print_count(r, f, l):
 def print_operations(num, data):
     for i in range(num):
         operation = data[3 * i:3 + 3 * i]
-        print("Operation ", i + 1, ": ", DIETS[operation[1] - 1], "x", operation[2], " into ", operation[0])
+        dest = operation[0]
+        if dest >= 100: print("Operation ", i + 1, ": ", DIETS[operation[1] - 1], "x", operation[2], " into ", dest - 100, "taped")
+        else: print("Operation ", i + 1, ": ", DIETS[operation[1] - 1], "x", operation[2], " into ", dest)
 
 
-ser = serial.Serial('COM1', 9600, timeout=0)
+ser = serial.Serial('COM1', 9600, timeout=0)  # open serial port on COM1
 
 DIETS = ["R", "F", "L", "RF", "RL", "FL", "RRF", "RRL", "RFF", "RLL", "RFL", "FFL",
          "FLL", "RRFL", "RFFL", "RFLL", "RLLL", "FLLL"]
 
-line_num_read = False
-line_num = 0
-lines_read = 0
-lines_processed = 0
+line_num_read = False  # flag to indicate if the total number of lines wa received
+line_num = 0  # integer storing total number of lines
+lines_read = 0  # integer storing the number of lines read
+lines_processed = 0  # integer storing the number of lines processed
 
-all_lines = b''
+all_lines = b''  # variable storing all lines received
 
-reading_incomplete = True
+reading_incomplete = True  # flag to indicate if reading is complete
 
 while reading_incomplete:
     try:
@@ -99,20 +86,16 @@ while reading_incomplete:
 
                     operation_num = all_lines[lines_processed]
 
-                    print_time("start", all_lines[lines_processed+1:lines_processed+8])
+                    print_time(all_lines[lines_processed+1:lines_processed+8])
                     print_operations(operation_num, all_lines[lines_processed+8:lines_processed+11+3*(operation_num-1)])
 
-                    print_taped(all_lines[lines_processed+11 + 3 * (operation_num - 1)],
-                                all_lines[lines_processed+12 + 3 * (operation_num - 1)])
+                    print_count(all_lines[lines_processed+11 + 3 * (operation_num - 1)],
+                                all_lines[lines_processed+12 + 3 * (operation_num - 1)],
+                                all_lines[lines_processed+13 + 3 * (operation_num - 1)])
 
-                    print_count(all_lines[lines_processed+13 + 3 * (operation_num - 1)],
-                                all_lines[lines_processed+14 + 3 * (operation_num - 1)],
-                                all_lines[lines_processed+15 + 3 * (operation_num - 1)])
+                    print_runtime(all_lines[lines_processed+14+3*(operation_num-1)])
 
-                    print_time("completion",
-                               all_lines[lines_processed+16+3*(operation_num-1):lines_processed+23+3*(operation_num-1)])
-
-                    lines_processed += 23 + 3 * (operation_num - 1)
+                    lines_processed += 15 + 3 * (operation_num - 1)
                     print()
 
                 reading_incomplete = False

@@ -36,7 +36,6 @@ int dcRunning;
 const int dcBase = 50;
 const int dcStep = 10;
 
-
 int period = 500;
 
 unsigned long rTopTime = 0;

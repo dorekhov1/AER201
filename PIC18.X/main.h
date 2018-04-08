@@ -27,9 +27,6 @@ typedef struct {
     int destination;
     enum diet dietType;
     int dietNum; //number of types the diet is repeated
-    
-    char timeCreated;
-    char timeExecuted;
 } Operation;
 
 void enterStandbyMode(void);

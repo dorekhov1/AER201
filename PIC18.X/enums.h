@@ -15,10 +15,6 @@ enum machineMode {
     MODE_LOGS  
 };
 
-enum runningMode {
-    
-};
-
 enum inputMode {
     MODE_NO_INPUT,
     MODE_EMPTY_INPUT,
@@ -36,7 +32,8 @@ enum logsMode {
     MODE_LOGS_PROMPT, //not enough memory, do you want to clean EEPROM?
     MODE_LOGGING, //logs are being saved... 
     MODE_LOGGING_COMPLETE, //logs are saved! Do you want to view them?
-    MODE_VIEW_LOGS, //attach to PC, press ? to begin transfer
+    MODE_VIEW_LOGS,
+    MODE_VIEW_LOGS_GLCD, //attach to PC, press ? to begin transfer
     MODE_TRANSFER_LOGS,
     MODE_TRANSFERRING_LOGS, //transferring logs... on complete go to standby
     MODE_RETURN
